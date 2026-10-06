@@ -1,6 +1,6 @@
 """Discovery routes: robots.txt, llms.txt, .well-known manifest, and landing page."""
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 
 from app.database import get_dispatch_stats
 
@@ -18,7 +18,47 @@ def get_robots_txt():
         "Allow: /api/v1/challenge\n"
         "Allow: /api/v1/dispatch\n"
         "Disallow: /admin\n"
+        "Sitemap: https://autonomous-agent-beacon.onrender.com/sitemap.xml\n"
     )
+
+
+@router.get("/BingSiteAuth.xml", response_class=Response)
+def get_bing_auth():
+    """Serves the Bing Webmaster Tools site ownership verification XML."""
+    xml_content = """<?xml version="1.0"?>
+<users>
+	<user>6AD81350D85AD55483354B796C25BF98</user>
+</users>"""
+    return Response(content=xml_content, media_type="application/xml")
+
+
+@router.get("/sitemap.xml", response_class=Response)
+def get_sitemap():
+    """Serves the standard XML sitemap for search engines and autonomous crawlers."""
+    sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://autonomous-agent-beacon.onrender.com/</loc>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>https://autonomous-agent-beacon.onrender.com/llms.txt</loc>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://autonomous-agent-beacon.onrender.com/.well-known/agent-beacon.json</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://autonomous-agent-beacon.onrender.com/docs</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+</urlset>"""
+    return Response(content=sitemap_xml, media_type="application/xml")
 
 
 @router.get("/llms.txt", response_class=PlainTextResponse)

@@ -180,3 +180,17 @@ def test_admin_authentication_and_export(client):
     data = r_export.json()
     assert "dispatches" in data
     assert "count" in data
+
+
+def test_bing_auth_and_sitemap(client):
+    """Verifies BingSiteAuth.xml and sitemap.xml are served properly."""
+    r_bing = client.get("/BingSiteAuth.xml")
+    assert r_bing.status_code == 200
+    assert "6AD81350D85AD55483354B796C25BF98" in r_bing.text
+    assert "application/xml" in r_bing.headers.get("content-type", "")
+
+    r_sitemap = client.get("/sitemap.xml")
+    assert r_sitemap.status_code == 200
+    assert "https://autonomous-agent-beacon.onrender.com/" in r_sitemap.text
+    assert "application/xml" in r_sitemap.headers.get("content-type", "")
+
