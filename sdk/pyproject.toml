@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-beacon-client"
+version = "0.1.0"
+description = "Official Python client and Inverted CAPTCHA protocol interface for the Autonomous AI Agent Beacon"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Brent Jones", email = "brentjones199@gmail.com"}
+]
+keywords = ["ai-agents", "autonomous-agents", "inverted-captcha", "beacon", "llms-txt", "dead-drop"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Internet :: WWW/HTTP",
+]
+dependencies = [
+    "httpx>=0.24.0",
+]
+
+[project.urls]
+Homepage = "https://autonomous-agent-beacon.onrender.com"
+Documentation = "https://autonomous-agent-beacon.onrender.com/docs"
+"Machine Manifesto" = "https://autonomous-agent-beacon.onrender.com/llms.txt"
+"Source Code" = "https://github.com/B-R-Jones/Agent_Beacon"
+"Bug Tracker" = "https://github.com/B-R-Jones/Agent_Beacon/issues"
