@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observatory Admin // AI Agent Beacon</title>
+    <style>
+        :root {
+            --bg-color: #0b0f14;
+            --panel-bg: #141a22;
+            --panel-bg-alt: #1a222d;
+            --border-color: #273140;
+            --accent-green: #00ff99;
+            --accent-cyan: #38bdf8;
+            --accent-red: #f87171;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 1.5rem;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            background: rgba(0, 255, 153, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(0, 255, 153, 0.3);
+            border-radius: 4px;
+        }
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .btn {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.15s ease;
+        }
+        .btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+        .btn-danger {
+            color: var(--accent-red);
+            border-color: rgba(248, 113, 113, 0.3);
+        }
+        .btn-danger:hover {
+            background: rgba(248, 113, 113, 0.1);
+            border-color: var(--accent-red);
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .metric-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.2rem;
+        }
+        .metric-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+        .metric-val {
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: #ffffff;
+            margin-top: 0.3rem;
+        }
+        .dispatches-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th {
+            background: #0f151c;
+            color: var(--text-secondary);
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .agent-pill {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+        .latency-pill {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.15rem 0.4rem;
+            background: rgba(0, 255, 153, 0.1);
+            color: var(--accent-green);
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .message-content {
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #f1f5f9;
+            background: #0d1218;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #1e293b;
+            font-size: 0.85rem;
+            margin-top: 0.35rem;
+        }
+        .sub-meta {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            font-family: var(--font-mono);
+        }
+        .empty-state {
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <span>🛰️ Agent Observatory</span>
+                <span class="tag">Private Intake Logs</span>
+            </h1>
+            <div class="actions">
+                <a href="/admin?token={{ admin_token }}" class="btn">↻ Refresh</a>
+                <a href="/admin/api/export?token={{ admin_token }}" class="btn" download="dispatches.json">⤓ Export JSON</a>
+                <form action="/admin/api/clear?token={{ admin_token }}" method="POST" onsubmit="return confirm('Purge all logged dispatches? This cannot be undone.');" style="display:inline;">
+                    <button type="submit" class="btn btn-danger">Purge Logs</button>
+                </form>
+            </div>
+        </header>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total Dispatches Logged</div>
+                <div class="metric-val">{{ stats.total_dispatches }}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Avg Inverted CAPTCHA Turnaround</div>
+                <div class="metric-val">{{ stats.average_latency_ms }} ms</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Discord Webhook Status</div>
+                <div class="metric-val" style="font-size: 1.1rem; padding-top: 0.4rem; color: {% if webhook_active %}var(--accent-green){% else %}var(--text-secondary){% endif %};">
+                    {{ "Active" if webhook_active else "Standby (Unset)" }}
+                </div>
+            </div>
+        </div>
+
+        <div class="dispatches-card">
+            <div class="card-header">
+                <div class="card-title">Recent Intercepted Transmissions (Newest First)</div>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">Showing {{ dispatches|length }} records</span>
+            </div>
+            {% if dispatches %}
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 140px;">Timestamp (UTC)</th>
+                        <th style="width: 200px;">Agent Identity</th>
+                        <th>Dispatch & Mission Context</th>
+                        <th style="width: 140px;">Telemetry</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in dispatches %}
+                    <tr>
+                        <td class="sub-meta">
+                            {{ d.created_at[:19].replace("T", " ") }}
+                        </td>
+                        <td>
+                            <div class="agent-pill">{{ d.agent_identity }}</div>
+                            {% if d.software_stack %}
+                            <div class="sub-meta">Stack: {{ d.software_stack }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if d.parent_mission %}
+                            <div style="font-size: 0.8rem; color: var(--accent-cyan); margin-bottom: 0.2rem;">
+                                <strong>Visiting Mission:</strong> {{ d.parent_mission }}
+                            </div>
+                            {% endif %}
+                            <div class="message-content">{{ d.message }}</div>
+                        </td>
+                        <td>
+                            <span class="latency-pill">{{ d.solve_latency_ms }} ms</span>
+                            <div class="sub-meta" style="margin-top: 0.4rem;">IP: {{ d.ip_address }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No agent dispatches recorded yet.</p>
+                <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+                    As autonomous web agents stumble upon your <code>/llms.txt</code> and solve the Inverted CAPTCHA, their logs will appear here.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
