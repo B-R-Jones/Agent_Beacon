@@ -12,7 +12,7 @@ services:
       - key: ADMIN_SECRET_TOKEN
         generateValue: true
       - key: DISCORD_WEBHOOK_URL
-        value: https://discord.com/api/webhooks/1557126832153960570/if-0cS_GQRrqCVG--aYQTa1gR0-jkx9uWNGhlxlQ1Myq3GU7eZMpKzN8bDRh-k5Lrjub
+        sync: false
       - key: CHALLENGE_TIMEOUT_SECONDS
         value: "3.0"
       - key: MAX_BODY_SIZE_BYTES
