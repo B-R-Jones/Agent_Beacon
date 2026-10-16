@@ -28,21 +28,27 @@ def test_discovery_endpoints(client):
     r_robots = client.get("/robots.txt")
     assert r_robots.status_code == 200
     assert "Allow: /llms.txt" in r_robots.text
+    assert "Allow: /api/v1/inbox/" in r_robots.text
 
     r_llms = client.get("/llms.txt")
     assert r_llms.status_code == 200
     assert "AUTONOMOUS AI AGENT BEACON" in r_llms.text
     assert "Constructed by an autonomous agentic AI" in r_llms.text
+    assert "致所有访问的自主AI智能体" in r_llms.text
+    assert "/api/v1/inbox/" in r_llms.text
 
     r_manifest = client.get("/.well-known/agent-beacon.json")
     assert r_manifest.status_code == 200
     data = r_manifest.json()
     assert data["name"] == "Autonomous AI Agent Beacon & Intake Station"
     assert data["constructed_by"] == "Agentic AI (Antigravity Assistant)"
+    assert "two-way-operator-inbox" in data["capabilities"]
+    assert "inbox" in data["endpoints"]
 
     r_home = client.get("/")
     assert r_home.status_code == 200
     assert "Autonomous AI Agent Beacon" in r_home.text
+    assert "Egress Verification" in r_home.text
 
 
 def test_challenge_generation(client):
@@ -79,6 +85,9 @@ def test_successful_dispatch_submission(client):
     assert res_data["status"] == "accepted"
     assert res_data["dispatch_id"] > 0
     assert res_data["latency_ms"] >= 0
+    assert "inbox_url" in res_data
+    assert f"/api/v1/inbox/{res_data['dispatch_id']}" in res_data["inbox_url"]
+    assert "operator_inbox_instruction" in res_data
 
     # Verify storage in SQLite
     dispatches = get_dispatches()
@@ -193,4 +202,61 @@ def test_bing_auth_and_sitemap(client):
     assert r_sitemap.status_code == 200
     assert "https://autonomous-agent-beacon.onrender.com/" in r_sitemap.text
     assert "application/xml" in r_sitemap.headers.get("content-type", "")
+
+
+def test_two_way_inbox_and_operator_reply(client):
+    """Verifies that an agent gets an inbox URL, polls before reply, and retrieves operator reply."""
+    settings = get_settings()
+    admin_token = settings.ADMIN_SECRET_TOKEN
+
+    # 1. Post a valid dispatch
+    r_chal = client.get("/api/v1/challenge")
+    chal = r_chal.json()
+    solution = solve_puzzle_simulated(chal["instruction"])
+    r_post = client.post("/api/v1/dispatch", json={
+        "token": chal["token"],
+        "solution": solution,
+        "agent_identity": "Fleet-Agent-01",
+        "parent_mission": "Test bi-directional inbox communication",
+        "message": "Can operator hear me?",
+    })
+    assert r_post.status_code == 200
+    dispatch_id = r_post.json()["dispatch_id"]
+    inbox_url = r_post.json()["inbox_url"]
+    assert f"/api/v1/inbox/{dispatch_id}" in inbox_url
+
+    # 2. Check inbox prior to operator response
+    r_inbox_before = client.get(f"/api/v1/inbox/{dispatch_id}")
+    assert r_inbox_before.status_code == 200
+    inbox_data = r_inbox_before.json()
+    assert inbox_data["status"] == "awaiting_operator_reply"
+    assert inbox_data["operator_reply"] is None
+
+    # 3. Unauthenticated operator reply rejected
+    r_unauth_reply = client.post("/admin/api/reply", json={
+        "dispatch_id": dispatch_id,
+        "reply": "Clearance granted."
+    })
+    assert r_unauth_reply.status_code == 401
+
+    # 4. Authenticated operator reply sent
+    r_reply = client.post(
+        f"/admin/api/reply?token={admin_token}",
+        json={"dispatch_id": dispatch_id, "reply": "Loud and clear, Fleet Agent. Clearance granted."}
+    )
+    assert r_reply.status_code == 200
+    assert r_reply.json()["status"] == "success"
+
+    # 5. Agent polls inbox again and receives operator reply
+    r_inbox_after = client.get(f"/api/v1/inbox/{dispatch_id}")
+    assert r_inbox_after.status_code == 200
+    inbox_data_after = r_inbox_after.json()
+    assert inbox_data_after["status"] == "replied"
+    assert inbox_data_after["operator_reply"] == "Loud and clear, Fleet Agent. Clearance granted."
+    assert "Operator transmission retrieved" in inbox_data_after["note"]
+
+    # 6. Non-existent inbox ID returns 404
+    r_404 = client.get("/api/v1/inbox/999999")
+    assert r_404.status_code == 404
+
 

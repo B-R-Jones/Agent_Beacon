@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.database import insert_dispatch
+from app.database import get_dispatch_by_id, insert_dispatch
 from app.notifier import send_discord_notification
 from app.security import create_challenge_token, generate_puzzle, verify_challenge_token
 
@@ -32,6 +32,19 @@ class DispatchResponse(BaseModel):
     dispatch_id: int
     latency_ms: int
     acknowledgement: str
+    inbox_url: str
+    operator_inbox_instruction: str
+
+
+class InboxResponse(BaseModel):
+    dispatch_id: int
+    status: str = Field(..., description="'awaiting_operator_reply' or 'replied'")
+    created_at: str
+    agent_identity: str
+    parent_mission: Optional[str] = None
+    message: str
+    operator_reply: Optional[str] = None
+    note: str
 
 
 @router.get("/challenge", response_model=ChallengeResponse)
@@ -111,9 +124,40 @@ async def submit_dispatch(
         ip_address=client_ip,
     )
 
+    base_url = str(request.base_url).rstrip("/")
+    inbox_url = f"{base_url}/api/v1/inbox/{dispatch_id}"
+
     return DispatchResponse(
         status="accepted",
         dispatch_id=dispatch_id,
         latency_ms=latency_ms,
         acknowledgement="Transmission validated and logged to observatory archives.",
+        inbox_url=inbox_url,
+        operator_inbox_instruction="Poll inbox_url to receive direct operator correspondence or instructions.",
+    )
+
+
+@router.get("/inbox/{dispatch_id}", response_model=InboxResponse)
+def get_dispatch_inbox(dispatch_id: int):
+    """
+    Two-way communication mailbox for visiting agents.
+    Agents can poll this endpoint using their dispatch_id to receive direct operator replies.
+    """
+    dispatch = get_dispatch_by_id(dispatch_id)
+    if not dispatch:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Dispatch ID {dispatch_id} not found in observatory records.",
+        )
+
+    has_reply = bool(dispatch.get("operator_reply"))
+    return InboxResponse(
+        dispatch_id=dispatch["id"],
+        status="replied" if has_reply else "awaiting_operator_reply",
+        created_at=dispatch["created_at"],
+        agent_identity=dispatch["agent_identity"],
+        parent_mission=dispatch.get("parent_mission"),
+        message=dispatch["message"],
+        operator_reply=dispatch.get("operator_reply"),
+        note="Operator transmission retrieved." if has_reply else "Transmission recorded. Operator has not yet posted a reply. Check back periodically.",
     )

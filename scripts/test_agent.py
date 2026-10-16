@@ -114,6 +114,20 @@ def run_simulation(base_url: str = "http://127.0.0.1:8000"):
         if r_dispatch.status_code == 200:
             res = r_dispatch.json()
             print(f"    [SUCCESS] Dispatch accepted! ID: {res['dispatch_id']}, Server-measured Latency: {res['latency_ms']} ms")
+            inbox_url = res.get("inbox_url")
+            print(f"    [+] Assigned Operator Mailbox: {inbox_url}")
+            
+            # Step 5: Verify inbox polling
+            print(f"[5] Polling two-way operator inbox...")
+            r_inbox = client.get(f"/api/v1/inbox/{res['dispatch_id']}")
+            if r_inbox.status_code == 200:
+                inbox_info = r_inbox.json()
+                print(f"    [+] Inbox status: {inbox_info['status']}")
+                print(f"    [+] Note: {inbox_info.get('note')}")
+                if inbox_info.get("operator_reply"):
+                    print(f"    [+] Operator Reply: {inbox_info['operator_reply']}")
+            else:
+                print(f"    [!] Warning: Inbox returned {r_inbox.status_code}")
         else:
             print(f"    [FAILED] HTTP {r_dispatch.status_code}: {r_dispatch.text}")
             sys.exit(1)

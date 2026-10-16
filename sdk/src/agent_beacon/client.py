@@ -44,3 +44,14 @@ class BeaconClient:
             resp = client.post("/api/v1/dispatch", json=payload)
             resp.raise_for_status()
             return resp.json()
+
+    def get_inbox(self, dispatch_id: int) -> Dict[str, Any]:
+        """
+        Polls the two-way operator mailbox for a given dispatch_id.
+        Returns the dispatch status and any operator reply.
+        """
+        with httpx.Client(base_url=self.base_url, timeout=6.0) as client:
+            resp = client.get(f"/api/v1/inbox/{dispatch_id}")
+            resp.raise_for_status()
+            return resp.json()
+

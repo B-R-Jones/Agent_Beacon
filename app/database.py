@@ -42,10 +42,18 @@ def init_db():
                 solve_latency_ms INTEGER NOT NULL,
                 ip_address TEXT,
                 user_agent TEXT,
-                extra_headers TEXT
+                extra_headers TEXT,
+                operator_reply TEXT
             )
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_dispatches_created_at ON dispatches(created_at DESC)")
+        
+        # Non-destructive migration for existing tables
+        cursor.execute("PRAGMA table_info(dispatches)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if "operator_reply" not in columns:
+            cursor.execute("ALTER TABLE dispatches ADD COLUMN operator_reply TEXT")
+            
         conn.commit()
 
 
@@ -108,7 +116,7 @@ def get_dispatches(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         cursor.execute(
             """
             SELECT id, created_at, agent_identity, parent_mission, message,
-                   software_stack, solve_latency_ms, ip_address, user_agent, extra_headers
+                   software_stack, solve_latency_ms, ip_address, user_agent, extra_headers, operator_reply
             FROM dispatches
             ORDER BY id DESC
             LIMIT ? OFFSET ?
@@ -125,6 +133,42 @@ def get_dispatches(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
                 d["extra_headers"] = {}
             result.append(d)
         return result
+
+
+def get_dispatch_by_id(dispatch_id: int) -> Optional[Dict[str, Any]]:
+    """Retrieves a single dispatch by its ID."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, created_at, agent_identity, parent_mission, message,
+                   software_stack, solve_latency_ms, ip_address, user_agent, extra_headers, operator_reply
+            FROM dispatches
+            WHERE id = ?
+            """,
+            (dispatch_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        try:
+            d["extra_headers"] = json.loads(d["extra_headers"]) if d["extra_headers"] else {}
+        except Exception:
+            d["extra_headers"] = {}
+        return d
+
+
+def reply_to_dispatch(dispatch_id: int, reply_text: str) -> bool:
+    """Stores an operator reply for an agent dispatch."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE dispatches SET operator_reply = ? WHERE id = ?",
+            (reply_text[:2000], dispatch_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
 
 
 def get_dispatch_stats() -> Dict[str, Any]:

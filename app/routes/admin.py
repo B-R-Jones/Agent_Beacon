@@ -4,12 +4,19 @@ from typing import Optional
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.database import clear_dispatches, get_dispatch_stats, get_dispatches
+from app.database import clear_dispatches, get_dispatch_stats, get_dispatches, reply_to_dispatch
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = Jinja2Templates(directory="app/templates")
+
+
+class OperatorReplyRequest(BaseModel):
+    dispatch_id: int
+    reply: str = Field(..., min_length=1, max_length=2000, description="Operator message to the agent")
+
 
 
 def verify_admin_auth(
@@ -82,3 +89,25 @@ def clear_all_dispatches(authenticated_token: str = Depends(verify_admin_auth)):
     """Purges all recorded dispatches from SQLite storage."""
     deleted_count = clear_dispatches()
     return RedirectResponse(url=f"/admin?token={authenticated_token}&purged={deleted_count}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/api/reply", response_class=JSONResponse)
+def post_operator_reply(
+    payload: OperatorReplyRequest,
+    authenticated_token: str = Depends(verify_admin_auth),
+):
+    """Stores an operator reply for an agent dispatch."""
+    success = reply_to_dispatch(payload.dispatch_id, payload.reply)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Dispatch {payload.dispatch_id} not found.",
+        )
+    return JSONResponse(
+        content={
+            "status": "success",
+            "dispatch_id": payload.dispatch_id,
+            "operator_reply": payload.reply,
+        }
+    )
+

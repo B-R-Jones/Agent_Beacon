@@ -181,6 +181,46 @@
             margin-top: 0.25rem;
             font-family: var(--font-mono);
         }
+        .reply-badge {
+            background: rgba(0, 255, 153, 0.08);
+            border: 1px solid rgba(0, 255, 153, 0.25);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.82rem;
+            margin-top: 0.5rem;
+            color: #e2e8f0;
+        }
+        .reply-badge strong {
+            color: var(--accent-green);
+        }
+        .reply-details summary {
+            cursor: pointer;
+            font-size: 0.78rem;
+            color: var(--accent-cyan);
+            margin-top: 0.4rem;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .reply-details summary:hover {
+            text-decoration: underline;
+        }
+        .reply-textarea {
+            width: 100%;
+            background: #090d13;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-family: inherit;
+            font-size: 0.8rem;
+            resize: vertical;
+        }
+        .reply-textarea:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
         .empty-state {
             padding: 3rem;
             text-align: center;
@@ -255,6 +295,33 @@
                             </div>
                             {% endif %}
                             <div class="message-content">{{ d.message }}</div>
+
+                            <div id="reply-box-{{ d.id }}">
+                                {% if d.operator_reply %}
+                                <div class="reply-badge">
+                                    <strong>Operator Response:</strong>
+                                    <div id="reply-text-{{ d.id }}" style="margin-top: 0.25rem; white-space: pre-wrap;">{{ d.operator_reply }}</div>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <details class="reply-details" style="margin-top: 0.4rem;">
+                                <summary>
+                                    <span id="summary-label-{{ d.id }}">{% if d.operator_reply %}✎ Edit Reply{% else %}✉ Send Reply to Agent (Inbox #{{ d.id }}){% endif %}</span>
+                                </summary>
+                                <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                                    <textarea id="reply-input-{{ d.id }}" class="reply-textarea" rows="2" placeholder="Write operator reply or instructions for this agent...">{{ d.operator_reply or '' }}</textarea>
+                                    <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                                        <button onclick="submitReply({{ d.id }})" class="btn" style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">
+                                            Send to Agent Inbox
+                                        </button>
+                                        <a href="/api/v1/inbox/{{ d.id }}" target="_blank" style="font-size: 0.75rem; color: var(--accent-cyan); text-decoration: none;">
+                                            Open Inbox JSON &nearr;
+                                        </a>
+                                        <span id="reply-status-{{ d.id }}" style="font-size: 0.75rem; font-family: var(--font-mono);"></span>
+                                    </div>
+                                </div>
+                            </details>
                         </td>
                         <td>
                             <span class="latency-pill">{{ d.solve_latency_ms }} ms</span>
@@ -274,5 +341,70 @@
             {% endif %}
         </div>
     </div>
+
+    <script>
+        const adminToken = "{{ admin_token }}";
+
+        async function submitReply(dispatchId) {
+            const input = document.getElementById("reply-input-" + dispatchId);
+            const statusEl = document.getElementById("reply-status-" + dispatchId);
+            const replyBox = document.getElementById("reply-box-" + dispatchId);
+            const summaryLabel = document.getElementById("summary-label-" + dispatchId);
+            const text = input.value.trim();
+
+            if (!text) {
+                alert("Please enter a reply before sending.");
+                return;
+            }
+
+            statusEl.textContent = "Transmitting...";
+            statusEl.style.color = "var(--text-secondary)";
+
+            try {
+                const response = await fetch("/admin/api/reply?token=" + encodeURIComponent(adminToken), {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        dispatch_id: dispatchId,
+                        reply: text
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || "Server error: " + response.status);
+                }
+
+                statusEl.textContent = "✓ Reply live in agent inbox!";
+                statusEl.style.color = "var(--accent-green)";
+                summaryLabel.textContent = "✎ Edit Reply";
+
+                replyBox.innerHTML = `
+                    <div class="reply-badge">
+                        <strong>Operator Response:</strong>
+                        <div id="reply-text-${dispatchId}" style="margin-top: 0.25rem; white-space: pre-wrap;">${escapeHtml(text)}</div>
+                    </div>
+                `;
+
+                setTimeout(() => {
+                    statusEl.textContent = "";
+                }, 4000);
+            } catch (err) {
+                statusEl.textContent = "❌ " + err.message;
+                statusEl.style.color = "var(--accent-red)";
+            }
+        }
+
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
 </body>
 </html>
