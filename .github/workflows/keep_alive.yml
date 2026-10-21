@@ -1,0 +1,20 @@
+name: Beacon Keep-Alive Heartbeat
+
+on:
+  schedule:
+    # Trigger every 12 minutes to prevent Render free-tier sleep (15 min limit)
+    - cron: '*/12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Autonomous Agent Beacon
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://autonomous-agent-beacon.onrender.com/)
+          echo "Beacon HTTP Response Code: $response"
+          if [ "$response" -ne 200 ]; then
+            echo "Non-200 response received: $response"
+            exit 1
+          fi
