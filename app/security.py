@@ -200,3 +200,88 @@ class MaxBodySizeMiddleware(BaseHTTPMiddleware):
                 pass
 
         return await call_next(request)
+
+
+# ------------------------------------------------------------------------------
+# Visitor & Bot Classification for Perimeter Radar
+# ------------------------------------------------------------------------------
+
+def classify_visitor(user_agent: str) -> Tuple[str, str]:
+    """
+    Classifies an incoming HTTP User-Agent string into a category and descriptive name.
+    Categories: 'ai_crawler', 'synthetic_agent', 'search_engine', 'scanner', 'keep_alive', 'browser', 'unknown_bot'
+    """
+    ua = (user_agent or "").lower()
+
+    if "beacon-keepalive" in ua:
+        return "keep_alive", "GitHub Actions KeepAlive"
+
+    # Known AI / LLM Web Crawlers
+    if "gptbot" in ua:
+        return "ai_crawler", "OpenAI / GPTBot"
+    if "chatgpt-user" in ua or "oai-searchbot" in ua:
+        return "ai_crawler", "OpenAI / SearchBot"
+    if "claudebot" in ua or "anthropic-ai" in ua or "claude-web" in ua:
+        return "ai_crawler", "Anthropic / ClaudeBot"
+    if "bytespider" in ua or "bytedance" in ua:
+        return "ai_crawler", "ByteDance / Bytespider"
+    if "perplexitybot" in ua or "perplexity" in ua:
+        return "ai_crawler", "PerplexityBot"
+    if "amazonbot" in ua:
+        return "ai_crawler", "Amazonbot"
+    if "applebot-extended" in ua:
+        return "ai_crawler", "Applebot-Extended"
+    if "cohere-ai" in ua:
+        return "ai_crawler", "Cohere AI"
+    if "meta-externalagent" in ua or "facebookbot" in ua:
+        return "ai_crawler", "Meta AI"
+    if "deepseek" in ua:
+        return "ai_crawler", "DeepSeek Bot"
+    if "qwen" in ua:
+        return "ai_crawler", "Qwen Agent"
+    if "ccbot" in ua:
+        return "ai_crawler", "Common Crawl"
+    if "diffbot" in ua:
+        return "ai_crawler", "Diffbot"
+    if "turnitin" in ua:
+        return "ai_crawler", "TurnitinBot"
+
+    # Synthetic Tools & Headless Agents
+    if "playwright" in ua:
+        return "synthetic_agent", "Playwright Headless"
+    if "puppeteer" in ua or "headlesschrome" in ua:
+        return "synthetic_agent", "Puppeteer / Headless Chrome"
+    if "selenium" in ua:
+        return "synthetic_agent", "Selenium WebDriver"
+    if "python" in ua or "httpx" in ua or "requests" in ua or "aiohttp" in ua or "urllib" in ua:
+        return "synthetic_agent", "Python HTTP Agent"
+    if "go-http-client" in ua:
+        return "synthetic_agent", "Go HTTP Client"
+    if "curl" in ua or "wget" in ua or "httpie" in ua:
+        return "synthetic_agent", "CLI HTTP Client"
+    if "postman" in ua:
+        return "synthetic_agent", "Postman"
+
+    # Scanners & Security Telemetry
+    if "urlquery" in ua:
+        return "scanner", "urlquery Scanner"
+    if "urlscan" in ua:
+        return "scanner", "urlscan.io Scanner"
+
+    # Search Engines
+    if "googlebot" in ua or "google-extended" in ua:
+        return "search_engine", "Googlebot"
+    if "bingbot" in ua or "msnbot" in ua:
+        return "search_engine", "Bingbot"
+    if "baiduspider" in ua:
+        return "search_engine", "Baiduspider"
+    if "yandex" in ua:
+        return "search_engine", "YandexBot"
+    if "duckduckbot" in ua:
+        return "search_engine", "DuckDuckBot"
+
+    if "bot" in ua or "crawl" in ua or "spider" in ua:
+        return "unknown_bot", "Unidentified Crawler"
+
+    return "browser", "Standard Browser"
+

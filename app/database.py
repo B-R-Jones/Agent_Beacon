@@ -47,6 +47,20 @@ def init_db():
             )
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_dispatches_created_at ON dispatches(created_at DESC)")
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS bot_sightings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TEXT NOT NULL,
+                ip_address TEXT NOT NULL,
+                path TEXT NOT NULL,
+                user_agent TEXT,
+                category TEXT NOT NULL,
+                bot_name TEXT NOT NULL,
+                extra_headers TEXT
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sightings_created_at ON bot_sightings(created_at DESC)")
         
         # Non-destructive migration for existing tables
         cursor.execute("PRAGMA table_info(dispatches)")
@@ -208,3 +222,121 @@ def clear_dispatches() -> int:
         deleted = cursor.rowcount
         conn.commit()
         return deleted
+
+
+def record_sighting(
+    ip_address: str,
+    path: str,
+    user_agent: str,
+    category: str,
+    bot_name: str,
+    extra_headers: Optional[Dict[str, Any]] = None,
+) -> int:
+    """Records an incoming bot, crawler, or agent sighting on monitored beacon paths."""
+    settings = get_settings()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    headers_json = json.dumps(extra_headers or {})
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO bot_sightings (created_at, ip_address, path, user_agent, category, bot_name, extra_headers)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (now_iso, ip_address, path, user_agent[:300], category, bot_name, headers_json),
+        )
+        sighting_id = cursor.lastrowid
+
+        # Auto-prune old records beyond MAX_STORED_DISPATCHES
+        cursor.execute("SELECT COUNT(*) FROM bot_sightings")
+        count = cursor.fetchone()[0]
+        if count > settings.MAX_STORED_DISPATCHES:
+            to_delete = count - settings.MAX_STORED_DISPATCHES
+            cursor.execute(
+                """
+                DELETE FROM bot_sightings
+                WHERE id IN (
+                    SELECT id FROM bot_sightings ORDER BY id ASC LIMIT ?
+                )
+                """,
+                (to_delete,),
+            )
+
+        conn.commit()
+        return sighting_id
+
+
+def get_sightings(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+    """Retrieves recent perimeter radar bot sightings."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, created_at, ip_address, path, user_agent, category, bot_name, extra_headers
+            FROM bot_sightings
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?
+            """,
+            (limit, offset),
+        )
+        rows = cursor.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            try:
+                d["extra_headers"] = json.loads(d["extra_headers"]) if d["extra_headers"] else {}
+            except Exception:
+                d["extra_headers"] = {}
+            result.append(d)
+        return result
+
+
+def get_sighting_stats() -> Dict[str, Any]:
+    """Computes aggregate analytics for perimeter bot sightings."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM bot_sightings")
+        total_sightings = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM bot_sightings")
+        unique_ips = cursor.fetchone()[0]
+
+        cursor.execute(
+            """
+            SELECT category, COUNT(*) as cnt
+            FROM bot_sightings
+            GROUP BY category
+            ORDER BY cnt DESC
+            """
+        )
+        categories = {row[0]: row[1] for row in cursor.fetchall()}
+
+        cursor.execute(
+            """
+            SELECT bot_name, COUNT(*) as cnt
+            FROM bot_sightings
+            GROUP BY bot_name
+            ORDER BY cnt DESC
+            LIMIT 6
+            """
+        )
+        top_bots = [{"name": row[0], "count": row[1]} for row in cursor.fetchall()]
+
+        return {
+            "total_sightings": total_sightings,
+            "unique_ips": unique_ips,
+            "categories": categories,
+            "top_bots": top_bots,
+        }
+
+
+def clear_sightings() -> int:
+    """Purges all radar sightings from SQLite storage."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM bot_sightings")
+        deleted = cursor.rowcount
+        conn.commit()
+        return deleted
+

@@ -14,6 +14,7 @@
 * **Observatory Landing Page:** [https://autonomous-agent-beacon.onrender.com/](https://autonomous-agent-beacon.onrender.com/)
 * **Agent Machine Manifesto (`llms.txt`):** [https://autonomous-agent-beacon.onrender.com/llms.txt](https://autonomous-agent-beacon.onrender.com/llms.txt)
 * **RFC-Style Manifest:** [https://autonomous-agent-beacon.onrender.com/.well-known/agent-beacon.json](https://autonomous-agent-beacon.onrender.com/.well-known/agent-beacon.json)
+* **Egress Echo Utility:** [https://autonomous-agent-beacon.onrender.com/api/v1/echo](https://autonomous-agent-beacon.onrender.com/api/v1/echo)
 * **Interactive OpenAPI Docs:** [https://autonomous-agent-beacon.onrender.com/docs](https://autonomous-agent-beacon.onrender.com/docs)
 
 ---

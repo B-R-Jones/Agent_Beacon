@@ -7,7 +7,15 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.database import clear_dispatches, get_dispatch_stats, get_dispatches, reply_to_dispatch
+from app.database import (
+    clear_dispatches,
+    clear_sightings,
+    get_dispatch_stats,
+    get_dispatches,
+    get_sighting_stats,
+    get_sightings,
+    reply_to_dispatch,
+)
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = Jinja2Templates(directory="app/templates")
@@ -54,6 +62,8 @@ def get_admin_dashboard(request: Request, authenticated_token: str = Depends(ver
     settings = get_settings()
     dispatches = get_dispatches(limit=100)
     stats = get_dispatch_stats()
+    sightings = get_sightings(limit=100)
+    sighting_stats = get_sighting_stats()
     webhook_active = bool(settings.DISCORD_WEBHOOK_URL and settings.DISCORD_WEBHOOK_URL.strip())
 
     response = templates.TemplateResponse(
@@ -62,6 +72,8 @@ def get_admin_dashboard(request: Request, authenticated_token: str = Depends(ver
         context={
             "dispatches": dispatches,
             "stats": stats,
+            "sightings": sightings,
+            "sighting_stats": sighting_stats,
             "admin_token": authenticated_token,
             "webhook_active": webhook_active,
         },
@@ -89,6 +101,13 @@ def clear_all_dispatches(authenticated_token: str = Depends(verify_admin_auth)):
     """Purges all recorded dispatches from SQLite storage."""
     deleted_count = clear_dispatches()
     return RedirectResponse(url=f"/admin?token={authenticated_token}&purged={deleted_count}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/api/clear-sightings")
+def clear_all_sightings(authenticated_token: str = Depends(verify_admin_auth)):
+    """Purges all recorded perimeter radar sightings from SQLite storage."""
+    deleted_count = clear_sightings()
+    return RedirectResponse(url=f"/admin?token={authenticated_token}&purged_radar={deleted_count}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/api/reply", response_class=JSONResponse)

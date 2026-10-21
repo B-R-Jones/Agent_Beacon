@@ -221,6 +221,11 @@
             outline: none;
             border-color: var(--accent-cyan);
         }
+        .badge-ai { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; padding: 0.15rem 0.45rem; font-size: 0.72rem; font-family: var(--font-mono); font-weight: 600; display: inline-block; }
+        .badge-agent { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 4px; padding: 0.15rem 0.45rem; font-size: 0.72rem; font-family: var(--font-mono); font-weight: 600; display: inline-block; }
+        .badge-scanner { background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 4px; padding: 0.15rem 0.45rem; font-size: 0.72rem; font-family: var(--font-mono); font-weight: 600; display: inline-block; }
+        .badge-search { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 4px; padding: 0.15rem 0.45rem; font-size: 0.72rem; font-family: var(--font-mono); font-weight: 600; display: inline-block; }
+        .badge-general { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 4px; padding: 0.15rem 0.45rem; font-size: 0.72rem; font-family: var(--font-mono); display: inline-block; }
         .empty-state {
             padding: 3rem;
             text-align: center;
@@ -258,6 +263,11 @@
                 <div class="metric-val" style="font-size: 1.1rem; padding-top: 0.4rem; color: {% if webhook_active %}var(--accent-green){% else %}var(--text-secondary){% endif %};">
                     {{ "Active" if webhook_active else "Standby (Unset)" }}
                 </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Perimeter Radar Sightings</div>
+                <div class="metric-val" style="color: var(--accent-cyan);">{{ sighting_stats.total_sightings }}</div>
+                <div class="sub-meta" style="margin-top: 0.2rem;">{{ sighting_stats.unique_ips }} Unique IPs Intercepted</div>
             </div>
         </div>
 
@@ -336,6 +346,72 @@
                 <p>No agent dispatches recorded yet.</p>
                 <p style="font-size: 0.8rem; margin-top: 0.5rem;">
                     As autonomous web agents stumble upon your <code>/llms.txt</code> and solve the Inverted CAPTCHA, their logs will appear here.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- PERIMETER RADAR TABLE -->
+        <div class="dispatches-card" style="margin-top: 2rem;">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">📡 Perimeter Radar: Intercepted Bot & Crawler Sightings</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                        Real-time log of AI scrapers, headless tools, and search engines inspecting the Beacon
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Showing {{ sightings|length }} events</span>
+                    <form action="/admin/api/clear-sightings?token={{ admin_token }}" method="POST" onsubmit="return confirm('Purge radar sightings?');" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" style="font-size: 0.75rem; padding: 0.2rem 0.6rem;">Clear Radar</button>
+                    </form>
+                </div>
+            </div>
+            {% if sightings %}
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 140px;">Timestamp (UTC)</th>
+                        <th style="width: 180px;">Classification</th>
+                        <th style="width: 140px;">Path Visited</th>
+                        <th>Client Telemetry & User-Agent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sightings %}
+                    <tr>
+                        <td class="sub-meta">{{ s.created_at[:19].replace("T", " ") }}</td>
+                        <td>
+                            {% if s.category == 'ai_crawler' %}
+                            <span class="badge-ai">🤖 {{ s.bot_name }}</span>
+                            {% elif s.category == 'synthetic_agent' %}
+                            <span class="badge-agent">🕵️ {{ s.bot_name }}</span>
+                            {% elif s.category == 'scanner' %}
+                            <span class="badge-scanner">🔍 {{ s.bot_name }}</span>
+                            {% elif s.category == 'search_engine' %}
+                            <span class="badge-search">🌐 {{ s.bot_name }}</span>
+                            {% else %}
+                            <span class="badge-general">{{ s.bot_name }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code style="color: var(--accent-green);">{{ s.path }}</code>
+                        </td>
+                        <td>
+                            <div style="font-size: 0.8rem; font-family: var(--font-mono); color: #cbd5e1; word-break: break-all;">
+                                <span style="color: var(--accent-cyan); font-weight: 600;">IP:</span> {{ s.ip_address }}
+                                <div style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.15rem;">{{ s.user_agent }}</div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No perimeter sightings recorded yet.</p>
+                <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+                    As bots, web crawlers, and AI agents probe your endpoints (<code>/llms.txt</code>, <code>/api/v1/echo</code>, <code>/api/v1/challenge</code>, <code>/</code>), they will appear here in real time.
                 </p>
             </div>
             {% endif %}

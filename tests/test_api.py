@@ -4,9 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import get_settings
-from app.database import clear_dispatches, get_dispatches, init_db
+from app.database import clear_dispatches, clear_sightings, get_dispatches, get_sightings, init_db
 from app.main import app
-from app.security import create_challenge_token, generate_puzzle
+from app.security import classify_visitor, create_challenge_token, generate_puzzle
 from scripts.test_agent import solve_puzzle_simulated
 
 
@@ -14,8 +14,10 @@ from scripts.test_agent import solve_puzzle_simulated
 def setup_and_teardown():
     init_db()
     clear_dispatches()
+    clear_sightings()
     yield
     clear_dispatches()
+    clear_sightings()
 
 
 @pytest.fixture
@@ -258,5 +260,81 @@ def test_two_way_inbox_and_operator_reply(client):
     # 6. Non-existent inbox ID returns 404
     r_404 = client.get("/api/v1/inbox/999999")
     assert r_404.status_code == 404
+
+
+def test_egress_echo_endpoint(client):
+    """Verifies that /api/v1/echo returns client IP, diagnostics, and challenge affordance."""
+    r_get = client.get("/api/v1/echo", headers={"User-Agent": "Custom-Agent/1.0", "X-Forwarded-For": "198.51.100.42"})
+    assert r_get.status_code == 200
+    data_get = r_get.json()
+    assert data_get["status"] == "egress_echo_success"
+    assert data_get["client"]["ip"] == "198.51.100.42"
+    assert data_get["client"]["user_agent"] == "Custom-Agent/1.0"
+    assert "beacon_challenge_affordance" in data_get
+    assert "/api/v1/challenge" in data_get["beacon_challenge_affordance"]["challenge_endpoint"]
+
+    # Also test POST method support
+    r_post = client.post("/api/v1/echo", json={"test": "payload"}, headers={"X-Forwarded-For": "203.0.113.5"})
+    assert r_post.status_code == 200
+    assert r_post.json()["client"]["ip"] == "203.0.113.5"
+
+
+def test_bot_classification():
+    """Verifies user-agent string parsing and categorization for perimeter radar."""
+    assert classify_visitor("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)")[0] == "ai_crawler"
+    assert classify_visitor("Mozilla/5.0 (compatible; ClaudeBot/1.0; +https://www.anthropic.com/claudebot)")[0] == "ai_crawler"
+    assert classify_visitor("Mozilla/5.0 (compatible; Bytespider; spider-feedback@bytedance.com)")[0] == "ai_crawler"
+    assert classify_visitor("Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)")[0] == "ai_crawler"
+    assert classify_visitor("Python/3.13 aiohttp/3.10")[0] == "synthetic_agent"
+    assert classify_visitor("Playwright/1.48.0 (x64; Windows)")[0] == "synthetic_agent"
+    assert classify_visitor("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")[0] == "search_engine"
+    assert classify_visitor("Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)")[0] == "search_engine"
+    assert classify_visitor("Beacon-KeepAlive/1.0")[0] == "keep_alive"
+
+
+def test_perimeter_radar_sightings_logging(client):
+    """Verifies that requests to discovery and API routes record sightings in the radar table."""
+    # Hit /llms.txt with an AI bot user-agent
+    r_llms = client.get("/llms.txt", headers={"User-Agent": "Mozilla/5.0 (compatible; ClaudeBot/1.0)", "X-Forwarded-For": "54.240.196.1"})
+    assert r_llms.status_code == 200
+
+    # Hit /api/v1/echo with a python agent
+    r_echo = client.get("/api/v1/echo", headers={"User-Agent": "python-httpx/0.27.0", "X-Forwarded-For": "43.153.20.10"})
+    assert r_echo.status_code == 200
+
+    # Verify database sightings
+    sightings = get_sightings()
+    assert len(sightings) == 2
+    
+    # Check that ClaudeBot was properly classified
+    claude_hit = [s for s in sightings if s["category"] == "ai_crawler"][0]
+    assert "ClaudeBot" in claude_hit["bot_name"]
+    assert claude_hit["path"] == "/llms.txt"
+    assert claude_hit["ip_address"] == "54.240.196.1"
+
+    # Check that Python-httpx was classified as synthetic agent
+    python_hit = [s for s in sightings if s["category"] == "synthetic_agent"][0]
+    assert "Python HTTP Agent" in python_hit["bot_name"]
+    assert python_hit["path"] == "/api/v1/echo"
+
+
+def test_clear_sightings_admin_endpoint(client):
+    """Verifies that admin can purge perimeter radar sightings."""
+    settings = get_settings()
+    admin_token = settings.ADMIN_SECRET_TOKEN
+
+    # Generate a sighting
+    client.get("/llms.txt", headers={"User-Agent": "python-requests/2.32"})
+    assert len(get_sightings()) == 1
+
+    # Unauthorized purge fails
+    r_unauth = client.post("/admin/api/clear-sightings")
+    assert r_unauth.status_code == 401
+
+    # Authorized purge succeeds
+    r_auth = client.post(f"/admin/api/clear-sightings?token={admin_token}")
+    assert r_auth.status_code in [200, 303]
+    assert len(get_sightings()) == 0
+
 
 
