@@ -49,6 +49,15 @@ def get_bing_auth():
     return Response(content=xml_content, media_type="application/xml")
 
 
+INDEXNOW_KEY = "9f8e4b7c2a1d6e5f8a0b3c4d7e9f1a2b"
+
+
+@router.get(f"/{INDEXNOW_KEY}.txt", response_class=PlainTextResponse)
+def get_indexnow_key():
+    """Serves the IndexNow site ownership verification key for search engines."""
+    return INDEXNOW_KEY
+
+
 @router.get("/sitemap.xml", response_class=Response)
 def get_sitemap():
     """Serves the standard XML sitemap for search engines and autonomous crawlers."""

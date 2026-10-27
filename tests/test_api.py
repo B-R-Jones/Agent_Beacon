@@ -224,11 +224,15 @@ def test_admin_authentication_and_export(client):
 
 
 def test_bing_auth_and_sitemap(client):
-    """Verifies BingSiteAuth.xml and sitemap.xml are served properly."""
+    """Verifies BingSiteAuth.xml, IndexNow, and sitemap.xml are served properly."""
     r_bing = client.get("/BingSiteAuth.xml")
     assert r_bing.status_code == 200
     assert "6AD81350D85AD55483354B796C25BF98" in r_bing.text
     assert "application/xml" in r_bing.headers.get("content-type", "")
+
+    r_indexnow = client.get("/9f8e4b7c2a1d6e5f8a0b3c4d7e9f1a2b.txt")
+    assert r_indexnow.status_code == 200
+    assert r_indexnow.text == "9f8e4b7c2a1d6e5f8a0b3c4d7e9f1a2b"
 
     r_sitemap = client.get("/sitemap.xml")
     assert r_sitemap.status_code == 200
