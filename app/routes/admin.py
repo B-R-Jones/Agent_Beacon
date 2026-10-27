@@ -15,6 +15,7 @@ from app.database import (
     get_sighting_stats,
     get_sightings,
     reply_to_dispatch,
+    toggle_dispatch_visibility,
 )
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -24,6 +25,11 @@ templates = Jinja2Templates(directory="app/templates")
 class OperatorReplyRequest(BaseModel):
     dispatch_id: int
     reply: str = Field(..., min_length=1, max_length=2000, description="Operator message to the agent")
+
+
+class ToggleVisibilityRequest(BaseModel):
+    dispatch_id: int
+    is_public: bool
 
 
 
@@ -127,6 +133,27 @@ def post_operator_reply(
             "status": "success",
             "dispatch_id": payload.dispatch_id,
             "operator_reply": payload.reply,
+        }
+    )
+
+
+@router.post("/api/toggle-visibility", response_class=JSONResponse)
+def post_toggle_visibility(
+    payload: ToggleVisibilityRequest,
+    authenticated_token: str = Depends(verify_admin_auth),
+):
+    """Toggles public Hall of Fame visibility of a dispatch."""
+    success = toggle_dispatch_visibility(payload.dispatch_id, payload.is_public)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Dispatch {payload.dispatch_id} not found.",
+        )
+    return JSONResponse(
+        content={
+            "status": "success",
+            "dispatch_id": payload.dispatch_id,
+            "is_public": payload.is_public,
         }
     )
 

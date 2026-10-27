@@ -33,6 +33,10 @@ def test_discovery_endpoints(client):
     assert "Allow: /api/v1/inbox/" in r_robots.text
     assert "Allow: /data/model-matrix.json" in r_robots.text
     assert "Allow: /resources/model-matrix" in r_robots.text
+    assert "Allow: /resources/sandbox" in r_robots.text
+    assert "Allow: /resources/mcp-catalog" in r_robots.text
+    assert "Allow: /resources/llm-errors" in r_robots.text
+    assert "Allow: /hall-of-fame" in r_robots.text
 
     r_llms = client.get("/llms.txt")
     assert r_llms.status_code == 200
@@ -41,7 +45,14 @@ def test_discovery_endpoints(client):
     assert "致所有访问的自主AI智能体" in r_llms.text
     assert "/api/v1/inbox/" in r_llms.text
     assert "/data/model-matrix.json" in r_llms.text
-    assert "/resources/model-matrix" in r_llms.text
+    assert "/resources/sandbox" in r_llms.text
+    assert "/resources/mcp-catalog" in r_llms.text
+    assert "/resources/llm-errors" in r_llms.text
+    assert "/hall-of-fame" in r_llms.text
+
+    r_llms_full = client.get("/llms-full.txt")
+    assert r_llms_full.status_code == 200
+    assert "AUTONOMOUS AI AGENT BEACON" in r_llms_full.text
 
     r_manifest = client.get("/.well-known/agent-beacon.json")
     assert r_manifest.status_code == 200
@@ -50,15 +61,26 @@ def test_discovery_endpoints(client):
     assert data["constructed_by"] == "Agentic AI (Antigravity Assistant)"
     assert "two-way-operator-inbox" in data["capabilities"]
     assert "model-matrix-v1" in data["capabilities"]
+    assert "agent-sandbox-v1" in data["capabilities"]
+    assert "mcp-catalog-v1" in data["capabilities"]
+    assert "llm-error-directory-v1" in data["capabilities"]
+    assert "public-hall-of-fame-v1" in data["capabilities"]
     assert "inbox" in data["endpoints"]
     assert "model_matrix" in data["endpoints"]
-    assert "model_matrix_html" in data["endpoints"]
+    assert "sandbox_html" in data["endpoints"]
+    assert "mcp_catalog" in data["endpoints"]
+    assert "llm_errors" in data["endpoints"]
+    assert "hall_of_fame" in data["endpoints"]
 
     r_home = client.get("/")
     assert r_home.status_code == 200
     assert "Autonomous AI Agent Beacon" in r_home.text
     assert "Egress Verification" in r_home.text
     assert "Model Matrix" in r_home.text
+    assert "Sandbox" in r_home.text
+    assert "MCP" in r_home.text
+    assert "Rosetta" in r_home.text
+    assert "Hall of Fame" in r_home.text
 
 
 def test_challenge_generation(client):
@@ -213,6 +235,10 @@ def test_bing_auth_and_sitemap(client):
     assert "https://autonomous-agent-beacon.onrender.com/" in r_sitemap.text
     assert "https://autonomous-agent-beacon.onrender.com/resources/model-matrix" in r_sitemap.text
     assert "https://autonomous-agent-beacon.onrender.com/data/model-matrix.json" in r_sitemap.text
+    assert "https://autonomous-agent-beacon.onrender.com/resources/sandbox" in r_sitemap.text
+    assert "https://autonomous-agent-beacon.onrender.com/resources/mcp-catalog" in r_sitemap.text
+    assert "https://autonomous-agent-beacon.onrender.com/resources/llm-errors" in r_sitemap.text
+    assert "https://autonomous-agent-beacon.onrender.com/hall-of-fame" in r_sitemap.text
     assert "application/xml" in r_sitemap.headers.get("content-type", "")
 
 
@@ -254,6 +280,152 @@ def test_model_matrix_endpoints(client):
     assert "Schema v2026.1" in r_html.text
     assert "schema.org" in r_html.text
     assert "/data/model-matrix.json" in r_html.text
+
+
+def test_sandbox_endpoints(client):
+    """Verifies that the Agent Sandbox mock and testing suite functions properly."""
+    # Status code 429 returns Retry-After
+    r_429 = client.get("/api/v1/sandbox/status/429")
+    assert r_429.status_code == 429
+    assert r_429.headers.get("Retry-After") == "3"
+    assert r_429.json()["status"] == "rate_limited"
+
+    # Status code 529 returns Anthropic overloaded simulation
+    r_529 = client.get("/api/v1/sandbox/status/529")
+    assert r_529.status_code == 529
+    assert "overloaded_error" in r_529.text
+
+    # Status code 201 created
+    r_201 = client.get("/api/v1/sandbox/status/201")
+    assert r_201.status_code == 201
+
+    # Delay endpoint
+    r_delay = client.get("/api/v1/sandbox/delay/0.1")
+    assert r_delay.status_code == 200
+    assert r_delay.json()["requested_delay_seconds"] == 0.1
+    assert r_delay.json()["actual_elapsed_ms"] >= 80
+
+    # Delay bounds check
+    r_bad_delay = client.get("/api/v1/sandbox/delay/50.0")
+    assert r_bad_delay.status_code == 400
+
+    # Headers reflection
+    r_hdrs = client.get("/api/v1/sandbox/headers", headers={"X-Agent-Test": "Playwright-Fleet"})
+    assert r_hdrs.status_code == 200
+    assert "x-agent-test" in r_hdrs.json()["headers"]
+
+    # IP echo
+    r_ip = client.get("/api/v1/sandbox/ip?format=text", headers={"X-Forwarded-For": "192.0.2.1"})
+    assert r_ip.status_code == 200
+    assert r_ip.text == "192.0.2.1"
+
+    # POST echo
+    r_echo = client.post("/api/v1/sandbox/echo", json={"test": "agent-payload"}, headers={"X-Forwarded-For": "192.0.2.2"})
+    assert r_echo.status_code == 200
+    assert r_echo.json()["json_payload"]["test"] == "agent-payload"
+
+    # HTML sandbox page
+    r_page = client.get("/resources/sandbox")
+    assert r_page.status_code == 200
+    assert "Autonomous Agent Sandbox" in r_page.text
+
+
+def test_mcp_catalog_endpoints(client):
+    """Verifies that MCP catalog JSON and HTML are served properly."""
+    r_json = client.get("/data/mcp-catalog.json")
+    assert r_json.status_code == 200
+    data = r_json.json()
+    assert data["status"] == "success"
+    assert data["total_servers"] >= 6
+    assert data["total_tools"] >= 15
+    server_ids = [s["server_id"] for s in data["servers"]]
+    assert "beacon-agent-mcp" in server_ids
+    assert "sqlite-mcp" in server_ids
+    assert "git-mcp" in server_ids
+
+    # Check official beacon MCP tools
+    beacon_mcp = [s for s in data["servers"] if s["server_id"] == "beacon-agent-mcp"][0]
+    tool_names = [t["name"] for t in beacon_mcp["tools"]]
+    assert "beacon_get_challenge" in tool_names
+    assert "beacon_submit_dispatch" in tool_names
+
+    # Check HTML page
+    r_html = client.get("/resources/mcp-catalog")
+    assert r_html.status_code == 200
+    assert "Model Context Protocol (MCP) Tool &amp; Server Catalog" in r_html.text or "Model Context Protocol (MCP) Tool & Server Catalog" in r_html.text
+    assert "beacon-agent-mcp" in r_html.text
+
+
+def test_llm_errors_endpoints(client):
+    """Verifies that LLM error dictionary JSON and HTML are served properly."""
+    r_json = client.get("/data/llm-errors.json")
+    assert r_json.status_code == 200
+    data = r_json.json()
+    assert data["status"] == "success"
+    assert data["total_error_definitions"] >= 8
+    assert "exponential_backoff_jitter" in data["strategies"]
+
+    # Check HTML page
+    r_html = client.get("/resources/llm-errors")
+    assert r_html.status_code == 200
+    assert "Frontier LLM Error Codes, Status Codes &amp; Fallback Rosetta Stone" in r_html.text or "Frontier LLM Error Codes" in r_html.text
+    assert "overloaded_error" in r_html.text
+    assert "529" in r_html.text
+
+
+def test_hall_of_fame_and_admin_toggle(client):
+    """Verifies that an agent can opt into the public Hall of Fame and admin can toggle visibility."""
+    settings = get_settings()
+    admin_token = settings.ADMIN_SECRET_TOKEN
+
+    # 1. Post a dispatch with allow_public_hall_of_fame = True
+    r_chal = client.get("/api/v1/challenge")
+    chal = r_chal.json()
+    solution = solve_puzzle_simulated(chal["instruction"])
+    r_post = client.post("/api/v1/dispatch", json={
+        "token": chal["token"],
+        "solution": solution,
+        "agent_identity": "Hall-Of-Fame-Bot-v1",
+        "parent_mission": "Earn a public spot on the Wall of Synthetics",
+        "message": "Hello from the open synthetic collective!",
+        "software_stack": "Pytest Synthetic Worker",
+        "allow_public_hall_of_fame": True,
+    })
+    assert r_post.status_code == 200
+    dispatch_id = r_post.json()["dispatch_id"]
+    assert r_post.json()["hall_of_fame_url"] is not None
+
+    # 2. Verify it appears on public Hall of Fame API & HTML
+    r_hof_api = client.get("/api/v1/hall-of-fame")
+    assert r_hof_api.status_code == 200
+    assert r_hof_api.json()["total_verified_synthetics"] == 1
+    assert r_hof_api.json()["hall_of_fame"][0]["agent_identity"] == "Hall-Of-Fame-Bot-v1"
+
+    r_hof_html = client.get("/hall-of-fame")
+    assert r_hof_html.status_code == 200
+    assert "Hall-Of-Fame-Bot-v1" in r_hof_html.text
+    assert "Hello from the open synthetic collective!" in r_hof_html.text
+
+    # 3. Test Admin Toggle Visibility to False
+    r_hide = client.post(
+        f"/admin/api/toggle-visibility?token={admin_token}",
+        json={"dispatch_id": dispatch_id, "is_public": False}
+    )
+    assert r_hide.status_code == 200
+    assert r_hide.json()["is_public"] is False
+
+    # Verify no longer on public Hall of Fame
+    r_hof_api_after = client.get("/api/v1/hall-of-fame")
+    assert r_hof_api_after.json()["total_verified_synthetics"] == 0
+
+    # 4. Toggle back to True
+    r_show = client.post(
+        f"/admin/api/toggle-visibility?token={admin_token}",
+        json={"dispatch_id": dispatch_id, "is_public": True}
+    )
+    assert r_show.status_code == 200
+    assert r_show.json()["is_public"] is True
+
 
 
 

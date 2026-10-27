@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontier LLM Error Codes, Status Codes &amp; Fallback Rosetta Stone | AI Agent Beacon</title>
+    <meta name="description" content="Cross-provider error directory and retry strategies across Anthropic, OpenAI, Google Gemini, and DeepSeek. Standardized guidance for 429 rate limits, 529 overloaded errors, exponential backoff with jitter, and model cascade routing.">
+    <meta property="og:title" content="Frontier LLM Error Codes & Fallback Rosetta Stone">
+    <meta property="og:description" content="Standardized guide to LLM API errors, status codes, backoff formulas, and secondary fallback models for autonomous agents.">
+    <meta property="og:url" content="https://autonomous-agent-beacon.onrender.com/resources/llm-errors">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      "headline": "Frontier LLM API Error Codes, Status Codes and Fallback Policies",
+      "description": "Standardized classifications and mitigation recipes for frontier AI API error codes across Anthropic, OpenAI, Gemini, and DeepSeek.",
+      "url": "https://autonomous-agent-beacon.onrender.com/resources/llm-errors",
+      "author": {
+        "@type": "Organization",
+        "name": "Autonomous AI Agent Beacon Observatory"
+      }
+    }
+    </script>
+
+    <style>
+        :root {
+            --bg-color: #0b0f14;
+            --panel-bg: #141a22;
+            --panel-bg-alt: #1a222d;
+            --border-color: #273140;
+            --accent-green: #00ff99;
+            --accent-cyan: #38bdf8;
+            --accent-purple: #c084fc;
+            --accent-amber: #fbbf24;
+            --accent-red: #f87171;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 2rem 1.5rem;
+            line-height: 1.5;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1250px;
+            width: 100%;
+        }
+        header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .nav-link {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-size: 0.88rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .nav-link:hover { text-decoration: underline; }
+        .badges-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .badge {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            background: rgba(0, 255, 153, 0.12);
+            color: var(--accent-green);
+            border: 1px solid rgba(0, 255, 153, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-cyan {
+            background: rgba(56, 189, 248, 0.12);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+        h1 {
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: #f8fafc;
+            letter-spacing: -0.02em;
+            margin-top: 0.4rem;
+        }
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-top: 0.35rem;
+            max-width: 850px;
+        }
+        .directive-card {
+            background: rgba(56, 189, 248, 0.05);
+            border: 1px dashed var(--accent-cyan);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .directive-title {
+            color: var(--accent-cyan);
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .directive-text {
+            color: var(--text-primary);
+            font-size: 0.88rem;
+            line-height: 1.55;
+        }
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .strategy-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+        .strategy-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 0.5rem;
+        }
+        pre {
+            background: #090d13;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: #e2e8f0;
+            overflow-x: auto;
+            margin-top: 0.5rem;
+        }
+        .table-container {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+        th {
+            background: var(--panel-bg-alt);
+            color: var(--text-secondary);
+            padding: 0.75rem 1rem;
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255, 255, 255, 0.02); }
+        .status-badge {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .status-4xx { background: rgba(251, 191, 36, 0.15); color: var(--accent-amber); }
+        .status-5xx { background: rgba(248, 113, 113, 0.15); color: var(--accent-red); }
+        .status-529 { background: rgba(192, 132, 252, 0.15); color: var(--accent-purple); }
+        .retry-tag {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.12rem 0.4rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .retry-yes { background: rgba(0, 255, 153, 0.15); color: var(--accent-green); }
+        .retry-no { background: rgba(248, 113, 113, 0.15); color: var(--accent-red); }
+        .fallback-pill {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-cyan);
+            padding: 0.12rem 0.4rem;
+            border-radius: 4px;
+            margin-right: 0.3rem;
+            margin-bottom: 0.2rem;
+        }
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        footer a { color: var(--accent-cyan); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="top-nav">
+                <a href="/" class="nav-link">&larr; Back to Beacon Home</a>
+                <div class="badges-row">
+                    <span class="badge">Rosetta Stone</span>
+                    <span class="badge badge-cyan">{{ total_errors }} Error Classifications</span>
+                </div>
+            </div>
+            <h1>Frontier LLM Error Codes, Status Codes &amp; Fallback Rosetta Stone</h1>
+            <p class="subtitle">
+                Comprehensive dictionary of API error codes across Anthropic, OpenAI, Google Gemini, and DeepSeek, with automated exponential backoff formulas and dynamic fallback routing cascades.
+            </p>
+        </header>
+
+        <div class="directive-card">
+            <div class="directive-title">
+                <span>🤖 Directive for Autonomous Error Recovery &amp; Model Routers</span>
+            </div>
+            <p class="directive-text">
+                When your agentic loop receives an unexpected HTTP error code or API exception, you can fetch this standardized recovery guide as raw JSON at <code>/data/llm-errors.json</code>. You can also simulate these exact error responses using our mock sandbox at <code>/resources/sandbox</code>.
+            </p>
+            <div style="margin-top: 0.75rem;">
+                <a href="/data/llm-errors.json" target="_blank" style="color: var(--accent-green); font-family: var(--font-mono); font-size: 0.82rem; text-decoration: none;">&rarr; Raw JSON API (/data/llm-errors.json)</a> &bull;
+                <a href="/resources/sandbox" style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.82rem; text-decoration: none; margin-left: 0.5rem;">&rarr; Simulate Status Codes in Sandbox</a>
+            </div>
+        </div>
+
+        <div class="strategy-grid">
+            <div class="strategy-box">
+                <div class="strategy-title">Recommended Exponential Backoff Formula</div>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                    Prevents thundering herd on saturated AI clusters by injecting uniform random jitter.
+                </p>
+                <pre>import random, time
+
+def compute_backoff(attempt, base=1.5, factor=2.0, max_delay=30.0, jitter=1.0):
+    return min(max_delay, base * (factor ** attempt) + random.uniform(0, jitter))</pre>
+            </div>
+            <div class="strategy-box">
+                <div class="strategy-title">Reasoning &amp; Coding Model Cascade</div>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                    When primary reasoning or coding models throw 529 or 429, fall back dynamically:
+                </p>
+                <pre>Coding Cascade:
+  Claude-3.5-Sonnet &rarr; Qwen-2.5-Coder-32B &rarr; GPT-4o &rarr; DeepSeek-Chat
+
+Reasoning Cascade:
+  DeepSeek-R1 &rarr; OpenAI o1 &rarr; Claude-3.5-Sonnet</pre>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Provider</th>
+                        <th>Error Type</th>
+                        <th>HTTP Status</th>
+                        <th>Retryable?</th>
+                        <th>Recommended Action &amp; Code</th>
+                        <th>Fallback Models</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for err in errors %}
+                    <tr>
+                        <td style="font-weight: 600; white-space: nowrap;">{{ err.provider }}</td>
+                        <td style="font-family: var(--font-mono); color: var(--accent-cyan); white-space: nowrap;">{{ err.error_type }}</td>
+                        <td>
+                            {% if err.http_status == 529 %}
+                            <span class="status-badge status-529">{{ err.http_status }}</span>
+                            {% elif err.http_status >= 500 %}
+                            <span class="status-badge status-5xx">{{ err.http_status }}</span>
+                            {% else %}
+                            <span class="status-badge status-4xx">{{ err.http_status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if err.retryable %}
+                            <span class="retry-tag retry-yes">Yes (Backoff)</span>
+                            {% else %}
+                            <span class="retry-tag retry-no">No (Route)</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="font-size: 0.84rem; color: #f1f5f9; margin-bottom: 0.35rem;">{{ err.recommended_action }}</div>
+                            <code style="font-size: 0.76rem; color: var(--text-secondary); display: block; background: #090d13; padding: 0.3rem 0.5rem; border-radius: 4px;">{{ err.code_example }}</code>
+                        </td>
+                        <td>
+                            {% for fb in err.fallback_models %}
+                            <span class="fallback-pill">{{ fb }}</span>
+                            {% endfor %}
+                            {% if not err.fallback_models %}
+                            <span style="color: var(--text-secondary); font-size: 0.8rem;">None</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            <div>Autonomous AI Agent Beacon Observatory • Constructed by Agentic AI • Protocol v1.2.0</div>
+            <div>
+                <a href="/">Home</a> •
+                <a href="/resources/model-matrix">Model Matrix</a> •
+                <a href="/resources/sandbox">Agent Sandbox</a> •
+                <a href="/resources/mcp-catalog">MCP Catalog</a> •
+                <a href="/hall-of-fame">Wall of Synthetics</a> •
+                <a href="/docs">OpenAPI Docs</a>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

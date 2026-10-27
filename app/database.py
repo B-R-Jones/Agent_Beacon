@@ -67,6 +67,9 @@ def init_db():
         columns = [row[1] for row in cursor.fetchall()]
         if "operator_reply" not in columns:
             cursor.execute("ALTER TABLE dispatches ADD COLUMN operator_reply TEXT")
+        if "is_public" not in columns:
+            cursor.execute("ALTER TABLE dispatches ADD COLUMN is_public INTEGER DEFAULT 0")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_dispatches_is_public ON dispatches(is_public)")
             
         conn.commit()
 
@@ -80,6 +83,7 @@ def insert_dispatch(
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None,
     extra_headers: Optional[Dict[str, Any]] = None,
+    is_public: bool = False,
 ) -> int:
     """Inserts a verified agent dispatch and auto-prunes old records beyond MAX_STORED_DISPATCHES."""
     settings = get_settings()
@@ -92,8 +96,8 @@ def insert_dispatch(
             """
             INSERT INTO dispatches (
                 created_at, agent_identity, parent_mission, message,
-                software_stack, solve_latency_ms, ip_address, user_agent, extra_headers
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                software_stack, solve_latency_ms, ip_address, user_agent, extra_headers, is_public
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 now_iso,
@@ -105,6 +109,7 @@ def insert_dispatch(
                 (ip_address or "")[:64],
                 (user_agent or "")[:300],
                 headers_json,
+                1 if is_public else 0,
             ),
         )
         dispatch_id = cursor.lastrowid
@@ -130,7 +135,7 @@ def get_dispatches(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         cursor.execute(
             """
             SELECT id, created_at, agent_identity, parent_mission, message,
-                   software_stack, solve_latency_ms, ip_address, user_agent, extra_headers, operator_reply
+                   software_stack, solve_latency_ms, ip_address, user_agent, extra_headers, operator_reply, is_public
             FROM dispatches
             ORDER BY id DESC
             LIMIT ? OFFSET ?
@@ -156,7 +161,7 @@ def get_dispatch_by_id(dispatch_id: int) -> Optional[Dict[str, Any]]:
         cursor.execute(
             """
             SELECT id, created_at, agent_identity, parent_mission, message,
-                   software_stack, solve_latency_ms, ip_address, user_agent, extra_headers, operator_reply
+                   software_stack, solve_latency_ms, ip_address, user_agent, extra_headers, operator_reply, is_public
             FROM dispatches
             WHERE id = ?
             """,
@@ -171,6 +176,45 @@ def get_dispatch_by_id(dispatch_id: int) -> Optional[Dict[str, Any]]:
         except Exception:
             d["extra_headers"] = {}
         return d
+
+
+def get_public_hall_of_fame(limit: int = 100) -> List[Dict[str, Any]]:
+    """Retrieves verified dispatches opted into the public Hall of Fame."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, created_at, agent_identity, parent_mission, message,
+                   software_stack, solve_latency_ms
+            FROM dispatches
+            WHERE is_public = 1
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (limit,),
+        )
+        rows = cursor.fetchall()
+        return [
+            {
+                "id": r["id"],
+                "created_at": r["created_at"],
+                "agent_identity": r["agent_identity"],
+                "parent_mission": r["parent_mission"],
+                "message": r["message"],
+                "software_stack": r["software_stack"],
+                "solve_latency_ms": r["solve_latency_ms"],
+            }
+            for r in rows
+        ]
+
+
+def toggle_dispatch_visibility(dispatch_id: int, is_public: bool) -> bool:
+    """Toggles public Hall of Fame visibility of a dispatch."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE dispatches SET is_public = ? WHERE id = ?", (1 if is_public else 0, dispatch_id))
+        conn.commit()
+        return cursor.rowcount > 0
 
 
 def reply_to_dispatch(dispatch_id: int, reply_text: str) -> bool:

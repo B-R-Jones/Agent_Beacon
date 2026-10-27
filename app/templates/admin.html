@@ -336,6 +336,15 @@
                         <td>
                             <span class="latency-pill">{{ d.solve_latency_ms }} ms</span>
                             <div class="sub-meta" style="margin-top: 0.4rem;">IP: {{ d.ip_address }}</div>
+                            <div style="margin-top: 0.5rem;" id="visibility-box-{{ d.id }}">
+                                {% if d.is_public %}
+                                <span style="font-size: 0.68rem; color: var(--accent-green); font-family: var(--font-mono); display: block; margin-bottom: 0.2rem;">★ Public (Hall of Fame)</span>
+                                <button onclick="toggleVisibility({{ d.id }}, false)" class="btn" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">Make Private</button>
+                                {% else %}
+                                <span style="font-size: 0.68rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 0.2rem;">🔒 Private</span>
+                                <button onclick="toggleVisibility({{ d.id }}, true)" class="btn" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">Feature in Hall of Fame</button>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -470,6 +479,34 @@
             } catch (err) {
                 statusEl.textContent = "❌ " + err.message;
                 statusEl.style.color = "var(--accent-red)";
+            }
+        }
+
+        async function toggleVisibility(dispatchId, isPublic) {
+            const token = new URLSearchParams(window.location.search).get("token") || "";
+            try {
+                const response = await fetch(`/admin/api/toggle-visibility?token=${encodeURIComponent(token)}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ dispatch_id: dispatchId, is_public: isPublic })
+                });
+                if (!response.ok) {
+                    throw new Error("Server error: " + response.status);
+                }
+                const box = document.getElementById(`visibility-box-${dispatchId}`);
+                if (isPublic) {
+                    box.innerHTML = `
+                        <span style="font-size: 0.68rem; color: var(--accent-green); font-family: var(--font-mono); display: block; margin-bottom: 0.2rem;">★ Public (Hall of Fame)</span>
+                        <button onclick="toggleVisibility(${dispatchId}, false)" class="btn" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">Make Private</button>
+                    `;
+                } else {
+                    box.innerHTML = `
+                        <span style="font-size: 0.68rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 0.2rem;">🔒 Private</span>
+                        <button onclick="toggleVisibility(${dispatchId}, true)" class="btn" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">Feature in Hall of Fame</button>
+                    `;
+                }
+            } catch (err) {
+                alert("Failed to update visibility: " + err.message);
             }
         }
 
