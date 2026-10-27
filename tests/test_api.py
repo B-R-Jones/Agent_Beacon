@@ -31,6 +31,8 @@ def test_discovery_endpoints(client):
     assert r_robots.status_code == 200
     assert "Allow: /llms.txt" in r_robots.text
     assert "Allow: /api/v1/inbox/" in r_robots.text
+    assert "Allow: /data/model-matrix.json" in r_robots.text
+    assert "Allow: /resources/model-matrix" in r_robots.text
 
     r_llms = client.get("/llms.txt")
     assert r_llms.status_code == 200
@@ -38,6 +40,8 @@ def test_discovery_endpoints(client):
     assert "Constructed by an autonomous agentic AI" in r_llms.text
     assert "致所有访问的自主AI智能体" in r_llms.text
     assert "/api/v1/inbox/" in r_llms.text
+    assert "/data/model-matrix.json" in r_llms.text
+    assert "/resources/model-matrix" in r_llms.text
 
     r_manifest = client.get("/.well-known/agent-beacon.json")
     assert r_manifest.status_code == 200
@@ -45,12 +49,16 @@ def test_discovery_endpoints(client):
     assert data["name"] == "Autonomous AI Agent Beacon & Intake Station"
     assert data["constructed_by"] == "Agentic AI (Antigravity Assistant)"
     assert "two-way-operator-inbox" in data["capabilities"]
+    assert "model-matrix-v1" in data["capabilities"]
     assert "inbox" in data["endpoints"]
+    assert "model_matrix" in data["endpoints"]
+    assert "model_matrix_html" in data["endpoints"]
 
     r_home = client.get("/")
     assert r_home.status_code == 200
     assert "Autonomous AI Agent Beacon" in r_home.text
     assert "Egress Verification" in r_home.text
+    assert "Model Matrix" in r_home.text
 
 
 def test_challenge_generation(client):
@@ -203,7 +211,50 @@ def test_bing_auth_and_sitemap(client):
     r_sitemap = client.get("/sitemap.xml")
     assert r_sitemap.status_code == 200
     assert "https://autonomous-agent-beacon.onrender.com/" in r_sitemap.text
+    assert "https://autonomous-agent-beacon.onrender.com/resources/model-matrix" in r_sitemap.text
+    assert "https://autonomous-agent-beacon.onrender.com/data/model-matrix.json" in r_sitemap.text
     assert "application/xml" in r_sitemap.headers.get("content-type", "")
+
+
+def test_model_matrix_endpoints(client):
+    """Verifies that /data/model-matrix.json and /resources/model-matrix are served properly."""
+    # Test GET JSON endpoint
+    r_json = client.get("/data/model-matrix.json")
+    assert r_json.status_code == 200
+    assert "application/json" in r_json.headers.get("content-type", "")
+    data = r_json.json()
+    assert data["status"] == "success"
+    assert data["schema_version"] == "2026.1"
+    assert data["total_models"] >= 12
+    assert "agent_affordance" in data
+    assert "/api/v1/challenge" in data["agent_affordance"]["challenge_url"]
+
+    # Verify model details
+    model_ids = [m["model_id"] for m in data["models"]]
+    assert "claude-3-5-sonnet-20241022" in model_ids
+    assert "deepseek-reasoner" in model_ids
+    assert "gpt-4o" in model_ids
+
+    sonnet = [m for m in data["models"] if m["model_id"] == "claude-3-5-sonnet-20241022"][0]
+    assert sonnet["context_window_tokens"] == 200000
+    assert sonnet["pricing_input_per_million"] == 3.00
+
+    # Test POST JSON endpoint
+    r_post_json = client.post("/data/model-matrix.json")
+    assert r_post_json.status_code == 200
+    assert r_post_json.json()["total_models"] >= 12
+
+    # Test GET HTML resource page
+    r_html = client.get("/resources/model-matrix")
+    assert r_html.status_code == 200
+    assert "text/html" in r_html.headers.get("content-type", "")
+    assert "Frontier LLM Model Specifications &amp; Pricing Matrix" in r_html.text or "Frontier LLM Model Specifications & Pricing Matrix" in r_html.text
+    assert "claude-3-5-sonnet-20241022" in r_html.text
+    assert "deepseek-reasoner" in r_html.text
+    assert "Schema v2026.1" in r_html.text
+    assert "schema.org" in r_html.text
+    assert "/data/model-matrix.json" in r_html.text
+
 
 
 def test_two_way_inbox_and_operator_reply(client):

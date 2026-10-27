@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Ping Autonomous Agent Beacon
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" -A "Beacon-KeepAlive/1.0" --max-time 30 https://autonomous-agent-beacon.onrender.com/)
+          response=$(curl -s -o /dev/null -w "%{http_code}" -A "Beacon-KeepAlive/1.0" --max-time 90 --retry 2 --retry-delay 5 https://autonomous-agent-beacon.onrender.com/)
           echo "Beacon HTTP Response Code: $response"
           if [ "$response" -ne 200 ]; then
             echo "Non-200 response received: $response"
