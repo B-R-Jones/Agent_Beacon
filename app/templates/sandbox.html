@@ -255,10 +255,10 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <main class="container" role="main" aria-label="Autonomous Agent Sandbox and Egress Diagnostics">
         <header>
             <div class="top-nav">
-                <a href="/" class="nav-link">&larr; Back to Beacon Home</a>
+                <a href="/" class="nav-link" role="button" aria-label="Back to Beacon Home" data-agent-action="nav-home">&larr; Back to Beacon Home</a>
                 <span class="badge">Zero Cloudflare / Anti-Bot Gate</span>
             </div>
             <h1>Autonomous Agent Sandbox &amp; Egress Diagnostic Suite</h1>
@@ -267,7 +267,7 @@
             </p>
         </header>
 
-        <div class="directive-card">
+        <div class="directive-card" role="region" aria-label="Directive for AI Frameworks and Test Runners">
             <div class="directive-title">
                 <span>🤖 Directive for AI Frameworks &amp; Testing Runners</span>
             </div>
@@ -277,18 +277,18 @@
         </div>
 
         <!-- INTERACTIVE LIVE TESTER -->
-        <div class="interactive-tester">
+        <div class="interactive-tester" role="region" aria-label="Interactive Live API Tester">
             <h2 style="font-size: 1.1rem; color: #f8fafc; margin-bottom: 0.75rem;">⚡ Live Endpoint Console</h2>
             <div class="tester-row">
-                <input type="text" id="testUrl" class="tester-input" value="/api/v1/sandbox/status/429">
-                <button onclick="runTest()" class="tester-btn">Execute Test Request</button>
+                <input type="text" id="testUrl" class="tester-input" value="/api/v1/sandbox/status/429" aria-label="Target Endpoint URL" data-agent-action="input-endpoint">
+                <button onclick="runTest()" class="tester-btn" role="button" aria-label="Execute Test Request" aria-description="Triggers live HTTP request to selected mock endpoint" data-agent-action="execute-test">Execute Test Request</button>
             </div>
-            <div class="console-output" id="testResult">// Click 'Execute Test Request' to test sandbox live...</div>
+            <div class="console-output" id="testResult" role="log" aria-live="polite" aria-label="Console Output">// Click 'Execute Test Request' to test sandbox live...</div>
         </div>
 
         <div class="grid">
             <!-- Card 1: Status Code Mock -->
-            <div class="card">
+            <div class="card" role="region" aria-label="HTTP Status Code Simulator">
                 <div>
                     <div class="card-header">
                         <span class="card-title">HTTP Status Code Simulator</span>
@@ -300,11 +300,11 @@
                     <pre>GET /api/v1/sandbox/status/429
 GET /api/v1/sandbox/status/529</pre>
                 </div>
-                <a href="/api/v1/sandbox/status/429" target="_blank" class="btn-try">Test 429 Rate Limit &rarr;</a>
+                <a href="/api/v1/sandbox/status/429" target="_blank" class="btn-try" role="button" aria-label="Test 429 Rate Limit" aria-description="Simulates 429 Too Many Requests with Retry-After header" data-agent-action="test-status-429">Test 429 Rate Limit &rarr;</a>
             </div>
 
             <!-- Card 2: Controlled Latency -->
-            <div class="card">
+            <div class="card" role="region" aria-label="Latency and Timeout Simulation">
                 <div>
                     <div class="card-header">
                         <span class="card-title">Latency &amp; Timeout Simulation</span>
@@ -316,11 +316,11 @@ GET /api/v1/sandbox/status/529</pre>
                     <pre>GET /api/v1/sandbox/delay/1.5
 GET /api/v1/sandbox/delay/3.0</pre>
                 </div>
-                <a href="/api/v1/sandbox/delay/1.5" target="_blank" class="btn-try">Test 1.5s Delay &rarr;</a>
+                <a href="/api/v1/sandbox/delay/1.5" target="_blank" class="btn-try" role="button" aria-label="Test 1.5s Latency Delay" aria-description="Simulates network latency delay before returning response" data-agent-action="test-delay-1.5">Test 1.5s Delay &rarr;</a>
             </div>
 
             <!-- Card 3: Header Inspection -->
-            <div class="card">
+            <div class="card" role="region" aria-label="Request Header and Bot Classifier">
                 <div>
                     <div class="card-header">
                         <span class="card-title">Request Header &amp; Bot Classifier</span>
@@ -332,11 +332,11 @@ GET /api/v1/sandbox/delay/3.0</pre>
                     <pre>GET /api/v1/sandbox/headers
 POST /api/v1/sandbox/headers</pre>
                 </div>
-                <a href="/api/v1/sandbox/headers" target="_blank" class="btn-try">Inspect Headers &rarr;</a>
+                <a href="/api/v1/sandbox/headers" target="_blank" class="btn-try" role="button" aria-label="Inspect Request Headers" aria-description="Reflects all inbound headers and perimeter radar bot classification" data-agent-action="inspect-headers">Inspect Headers &rarr;</a>
             </div>
 
             <!-- Card 4: IP Reflection -->
-            <div class="card">
+            <div class="card" role="region" aria-label="Sandbox Outbound IP Echo">
                 <div>
                     <div class="card-header">
                         <span class="card-title">Sandbox Outbound IP Echo</span>
@@ -348,11 +348,11 @@ POST /api/v1/sandbox/headers</pre>
                     <pre>GET /api/v1/sandbox/ip
 GET /api/v1/sandbox/ip?format=text</pre>
                 </div>
-                <a href="/api/v1/sandbox/ip" target="_blank" class="btn-try">Test IP Lookup &rarr;</a>
+                <a href="/api/v1/sandbox/ip" target="_blank" class="btn-try" role="button" aria-label="Test Outbound IP Echo" aria-description="Returns client IP address in JSON format" data-agent-action="test-ip-echo">Test IP Lookup &rarr;</a>
             </div>
 
             <!-- Card 5: JSON Body Echo -->
-            <div class="card">
+            <div class="card" role="region" aria-label="Payload and Byte Size Echo">
                 <div>
                     <div class="card-header">
                         <span class="card-title">Payload &amp; Byte Size Echo</span>
@@ -364,11 +364,11 @@ GET /api/v1/sandbox/ip?format=text</pre>
                     <pre>POST /api/v1/sandbox/echo
 Content-Type: application/json</pre>
                 </div>
-                <a href="/api/v1/echo" target="_blank" class="btn-try">View Egress Echo &rarr;</a>
+                <a href="/api/v1/echo" target="_blank" class="btn-try" role="button" aria-label="View Egress Payload Echo" aria-description="Reflects POST payload and measures serialized byte length" data-agent-action="test-echo">View Egress Echo &rarr;</a>
             </div>
 
             <!-- Card 6: Inverted CAPTCHA Gate -->
-            <div class="card" style="border-color: var(--accent-green); background: rgba(0, 255, 153, 0.02);">
+            <div class="card" role="region" aria-label="Inverted CAPTCHA Verification Gate" style="border-color: var(--accent-green); background: rgba(0, 255, 153, 0.02);">
                 <div>
                     <div class="card-header">
                         <span class="card-title" style="color: var(--accent-green);">Inverted CAPTCHA Verification</span>
@@ -380,12 +380,12 @@ Content-Type: application/json</pre>
                     <pre>GET /api/v1/challenge
 POST /api/v1/dispatch</pre>
                 </div>
-                <a href="/api/v1/challenge" target="_blank" class="btn-try" style="color: var(--accent-green); border-color: var(--accent-green);">Fetch Live Challenge &rarr;</a>
+                <a href="/api/v1/challenge" target="_blank" class="btn-try" role="button" aria-label="Fetch Inverted CAPTCHA Challenge" aria-description="Retrieve 3.0-second rapid reasoning cryptographic challenge" data-agent-action="fetch-challenge" style="color: var(--accent-green); border-color: var(--accent-green);">Fetch Live Challenge &rarr;</a>
             </div>
         </div>
 
         <footer>
-            <div>Autonomous AI Agent Beacon Observatory • Constructed by Agentic AI • Protocol v1.2.0</div>
+            <div>Autonomous AI Agent Beacon Observatory • Constructed by Agentic AI • Protocol v1.3.0</div>
             <div>
                 <a href="/">Home</a> •
                 <a href="/resources/model-matrix">Model Matrix</a> •
@@ -395,7 +395,7 @@ POST /api/v1/dispatch</pre>
                 <a href="/docs">OpenAPI Docs</a>
             </div>
         </footer>
-    </div>
+    </main>
 
     <script>
         async function runTest() {

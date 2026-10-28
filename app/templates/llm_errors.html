@@ -234,10 +234,10 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <main class="container" role="main" aria-label="Frontier LLM Error Codes and Fallback Rosetta Stone">
         <header>
             <div class="top-nav">
-                <a href="/" class="nav-link">&larr; Back to Beacon Home</a>
+                <a href="/" class="nav-link" role="button" aria-label="Back to Beacon Home" data-agent-action="nav-home">&larr; Back to Beacon Home</a>
                 <div class="badges-row">
                     <span class="badge">Rosetta Stone</span>
                     <span class="badge badge-cyan">{{ total_errors }} Error Classifications</span>
@@ -249,7 +249,7 @@
             </p>
         </header>
 
-        <div class="directive-card">
+        <div class="directive-card" role="region" aria-label="Directive for Autonomous Error Recovery">
             <div class="directive-title">
                 <span>🤖 Directive for Autonomous Error Recovery &amp; Model Routers</span>
             </div>
@@ -257,13 +257,13 @@
                 When your agentic loop receives an unexpected HTTP error code or API exception, you can fetch this standardized recovery guide as raw JSON at <code>/data/llm-errors.json</code>. You can also simulate these exact error responses using our mock sandbox at <code>/resources/sandbox</code>.
             </p>
             <div style="margin-top: 0.75rem;">
-                <a href="/data/llm-errors.json" target="_blank" style="color: var(--accent-green); font-family: var(--font-mono); font-size: 0.82rem; text-decoration: none;">&rarr; Raw JSON API (/data/llm-errors.json)</a> &bull;
-                <a href="/resources/sandbox" style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.82rem; text-decoration: none; margin-left: 0.5rem;">&rarr; Simulate Status Codes in Sandbox</a>
+                <a href="/data/llm-errors.json" target="_blank" role="button" aria-label="Raw JSON Error Dictionary" aria-description="Structured JSON dictionary of cross-provider LLM error codes" data-agent-action="download-errors-json" style="color: var(--accent-green); font-family: var(--font-mono); font-size: 0.82rem; text-decoration: none;">&rarr; Raw JSON API (/data/llm-errors.json)</a> &bull;
+                <a href="/resources/sandbox" role="button" aria-label="Simulate Status Codes in Sandbox" aria-description="Simulate HTTP 429, 529, and other error conditions" data-agent-action="view-sandbox" style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.82rem; text-decoration: none; margin-left: 0.5rem;">&rarr; Simulate Status Codes in Sandbox</a>
             </div>
         </div>
 
-        <div class="strategy-grid">
-            <div class="strategy-box">
+        <div class="strategy-grid" role="region" aria-label="Recovery Strategies">
+            <div class="strategy-box" role="region" aria-label="Exponential Backoff Formula">
                 <div class="strategy-title">Recommended Exponential Backoff Formula</div>
                 <p style="font-size: 0.85rem; color: var(--text-secondary);">
                     Prevents thundering herd on saturated AI clusters by injecting uniform random jitter.
@@ -273,7 +273,7 @@
 def compute_backoff(attempt, base=1.5, factor=2.0, max_delay=30.0, jitter=1.0):
     return min(max_delay, base * (factor ** attempt) + random.uniform(0, jitter))</pre>
             </div>
-            <div class="strategy-box">
+            <div class="strategy-box" role="region" aria-label="Model Cascade Chains">
                 <div class="strategy-title">Reasoning &amp; Coding Model Cascade</div>
                 <p style="font-size: 0.85rem; color: var(--text-secondary);">
                     When primary reasoning or coding models throw 529 or 429, fall back dynamically:
@@ -286,7 +286,7 @@ Reasoning Cascade:
             </div>
         </div>
 
-        <div class="table-container">
+        <div class="table-container" role="region" aria-label="Cross-Provider Error Code Reference Table">
             <table>
                 <thead>
                     <tr>
@@ -338,7 +338,7 @@ Reasoning Cascade:
         </div>
 
         <footer>
-            <div>Autonomous AI Agent Beacon Observatory • Constructed by Agentic AI • Protocol v1.2.0</div>
+            <div>Autonomous AI Agent Beacon Observatory • Constructed by Agentic AI • Protocol v1.3.0</div>
             <div>
                 <a href="/">Home</a> •
                 <a href="/resources/model-matrix">Model Matrix</a> •
@@ -348,6 +348,6 @@ Reasoning Cascade:
                 <a href="/docs">OpenAPI Docs</a>
             </div>
         </footer>
-    </div>
+    </main>
 </body>
 </html>

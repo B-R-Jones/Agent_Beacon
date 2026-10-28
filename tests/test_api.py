@@ -564,4 +564,51 @@ def test_clear_sightings_admin_endpoint(client):
     assert len(get_sightings()) == 0
 
 
+def test_temporal_inference_cadence_tracking(client):
+    """Verifies that inter-request cadence is calculated and LLM turn pacing is detected."""
+    import time
+    ip = "198.51.100.99"
+    
+    # First request sets the initial timestamp
+    r1 = client.get("/llms.txt", headers={"User-Agent": "AutonomousAgent/1.0", "X-Forwarded-For": ip})
+    assert r1.status_code == 200
+
+    # Wait 0.9s to simulate LLM inference generation time (Palisade Research arXiv:2410.13919)
+    time.sleep(0.9)
+
+    # Second request should detect delta cadence
+    r2 = client.get("/data/model-matrix.json", headers={"User-Agent": "AutonomousAgent/1.0", "X-Forwarded-For": ip})
+    assert r2.status_code == 200
+
+    sightings = get_sightings(limit=10)
+    assert len(sightings) >= 2
+    latest = sightings[0]
+
+    assert latest["ip_address"] == ip
+    assert latest["cadence_ms"] is not None
+    assert 700 <= latest["cadence_ms"] <= 2000
+    assert "x-llm-cadence" in latest["extra_headers"]
+    assert "LLM turn pattern" in latest["extra_headers"]["x-llm-cadence"]
+
+
+def test_axtree_semantic_aria_attributes(client):
+    """Verifies that all technical discovery pages expose AXTree and semantic ARIA affordances for web navigation agents."""
+    pages = [
+        "/",
+        "/resources/sandbox",
+        "/resources/mcp-catalog",
+        "/resources/llm-errors",
+        "/resources/model-matrix",
+        "/hall-of-fame",
+    ]
+    for page in pages:
+        r = client.get(page)
+        assert r.status_code == 200
+        html = r.text
+        assert 'role="main"' in html or 'role="region"' in html
+        assert 'role="button"' in html
+        assert 'data-agent-action=' in html
+
+
+
 

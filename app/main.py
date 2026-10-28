@@ -1,5 +1,7 @@
 """Main application entry point for the Autonomous AI Agent Beacon."""
+import time
 from contextlib import asynccontextmanager
+from typing import Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -11,6 +13,9 @@ from app.routes.admin import router as admin_router
 from app.routes.api import router as api_router
 from app.routes.discovery import router as discovery_router
 from app.security import MaxBodySizeMiddleware, classify_visitor
+
+# In-memory tracking for inter-request inference cadence analysis (Palisade Research arXiv:2410.13919)
+_IP_LAST_SEEN: Dict[str, float] = {}
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -29,6 +34,7 @@ class RadarSightingsMiddleware(BaseHTTPMiddleware):
     """
     Perimeter Radar: Intercepts and catalogs all bot, crawler, and agent visits
     across discovery files and public API endpoints.
+    Includes temporal inference cadence detection (0.8s–4.5s intervals).
     """
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
@@ -49,11 +55,27 @@ class RadarSightingsMiddleware(BaseHTTPMiddleware):
         if "," in client_ip:
             client_ip = client_ip.split(",")[0].strip()
 
+        # Compute inter-request delta timing (Inference Cadence)
+        now = time.time()
+        last_time = _IP_LAST_SEEN.get(client_ip)
+        cadence_ms = None
+        if last_time:
+            delta_sec = now - last_time
+            if 0.05 <= delta_sec <= 120.0:
+                cadence_ms = round(delta_sec * 1000)
+
+        _IP_LAST_SEEN[client_ip] = now
+        if len(_IP_LAST_SEEN) > 5000:
+            _IP_LAST_SEEN.clear()
+
         extra_headers = {}
         for h in ["x-agent-framework", "x-model-name", "sec-ch-ua", "referer", "accept-language"]:
             val = request.headers.get(h)
             if val:
                 extra_headers[h] = val[:150]
+
+        if cadence_ms and 800 <= cadence_ms <= 4500:
+            extra_headers["x-llm-cadence"] = f"{cadence_ms}ms (LLM turn pattern)"
 
         try:
             record_sighting(
@@ -63,6 +85,7 @@ class RadarSightingsMiddleware(BaseHTTPMiddleware):
                 category=category,
                 bot_name=bot_name,
                 extra_headers=extra_headers,
+                cadence_ms=cadence_ms,
             )
         except Exception:
             pass  # Never disrupt request flow for telemetry logging

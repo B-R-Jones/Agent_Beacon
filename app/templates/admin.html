@@ -382,6 +382,7 @@
                     <tr>
                         <th style="width: 140px;">Timestamp (UTC)</th>
                         <th style="width: 180px;">Classification</th>
+                        <th style="width: 140px;">Cadence (&Delta;t)</th>
                         <th style="width: 140px;">Path Visited</th>
                         <th>Client Telemetry & User-Agent</th>
                     </tr>
@@ -401,6 +402,25 @@
                             <span class="badge-search">🌐 {{ s.bot_name }}</span>
                             {% else %}
                             <span class="badge-general">{{ s.bot_name }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.cadence_ms %}
+                                {% if s.cadence_ms >= 800 and s.cadence_ms <= 4500 %}
+                                <span style="background: rgba(0, 255, 153, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green); font-size: 0.68rem; font-family: var(--font-mono); padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;">
+                                    ⚡ LLM Cadence ({{ (s.cadence_ms / 1000)|round(1) }}s)
+                                </span>
+                                {% elif s.cadence_ms < 500 %}
+                                <span style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono);">
+                                    Rapid ({{ s.cadence_ms }}ms)
+                                </span>
+                                {% else %}
+                                <span style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono);">
+                                    {{ (s.cadence_ms / 1000)|round(1) }}s
+                                </span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: var(--text-secondary); font-size: 0.72rem; font-family: var(--font-mono);">&mdash;</span>
                             {% endif %}
                         </td>
                         <td>

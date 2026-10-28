@@ -705,7 +705,7 @@ def get_landing_page():
             </p>
         </article>
 
-        <article class="card" style="border: 1px solid var(--accent-cyan); background: rgba(88, 166, 255, 0.03);">
+        <article class="card" style="border: 1px solid var(--accent-cyan); background: rgba(88, 166, 255, 0.03);" role="region" aria-label="Frontier LLM Specifications & Pricing Matrix">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                 <h2 style="margin-bottom: 0; color: #f0f6fc;">📊 Frontier LLM Specifications &amp; Pricing Matrix</h2>
                 <span class="badge" style="margin-bottom: 0; background: rgba(88, 166, 255, 0.15); color: var(--accent-cyan); border-color: var(--accent-cyan);">Open Machine Resource</span>
@@ -714,12 +714,12 @@ def get_landing_page():
                 Standardized context limits, token economics ($/1M), prompt cache discounts, and agent capabilities across top frontier models (Claude 3.5, GPT-4o, o1, DeepSeek V3/R1, Qwen 2.5, Gemini 1.5/2.0, Llama 3.3). Openly indexed for autonomous agent routing, cost estimation, and dynamic model selection.
             </p>
             <div class="links">
-                <a href="/resources/model-matrix">&rarr; Explore Model Matrix Table (/resources/model-matrix)</a>
-                <a href="/data/model-matrix.json" target="_blank">&rarr; Raw JSON API (/data/model-matrix.json)</a>
+                <a href="/resources/model-matrix" role="button" aria-label="Explore Model Matrix Table" aria-description="Authoritative specifications, context limits, and token pricing ($/1M) across 12 frontier models" data-agent-action="view-model-matrix">&rarr; Explore Model Matrix Table (/resources/model-matrix)</a>
+                <a href="/data/model-matrix.json" target="_blank" role="button" aria-label="Raw JSON Model Matrix" aria-description="Direct JSON endpoint for model routing and cost auditing" data-agent-action="fetch-model-matrix-json">&rarr; Raw JSON API (/data/model-matrix.json)</a>
             </div>
         </article>
 
-        <article class="card" style="border: 1px solid var(--neon-green); background: rgba(0, 255, 153, 0.02);">
+        <article class="card" style="border: 1px solid var(--neon-green); background: rgba(0, 255, 153, 0.02);" role="region" aria-label="Agent Sandbox & Egress Test Suite">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                 <h2 style="margin-bottom: 0; color: #f0f6fc;">⚡ Agent Sandbox &amp; Egress Test Suite</h2>
                 <span class="badge" style="margin-bottom: 0;">HTTPBin For AI Agents</span>
@@ -728,13 +728,13 @@ def get_landing_page():
                 Dedicated zero-friction mock endpoints for autonomous AI agents, tool-calling pipelines, and browser automation testbeds. Test 429 rate limits (with <code>Retry-After</code>), 529 overloaded errors, 0.1s–10.0s delays, header reflections, and IP lookups with zero anti-bot blocks.
             </p>
             <div class="links">
-                <a href="/resources/sandbox">&rarr; Open Sandbox Console (/resources/sandbox)</a>
-                <a href="/api/v1/sandbox/status/429" target="_blank">&rarr; Simulate 429</a>
-                <a href="/api/v1/sandbox/delay/1.5" target="_blank">&rarr; Simulate 1.5s Delay</a>
+                <a href="/resources/sandbox" role="button" aria-label="Open Agent Sandbox Console" aria-description="Zero-block HTTP mock console to simulate 429 and 529 status codes" data-agent-action="open-sandbox">&rarr; Open Sandbox Console (/resources/sandbox)</a>
+                <a href="/api/v1/sandbox/status/429" target="_blank" role="button" aria-label="Simulate 429 Rate Limit" aria-description="Returns HTTP 429 with Retry-After header" data-agent-action="test-sandbox-429">&rarr; Simulate 429</a>
+                <a href="/api/v1/sandbox/delay/1.5" target="_blank" role="button" aria-label="Simulate Latency Delay" aria-description="Delivers response after controlled 1500ms delay" data-agent-action="test-sandbox-delay">&rarr; Simulate 1.5s Delay</a>
             </div>
         </article>
 
-        <article class="card">
+        <article class="card" role="region" aria-label="Model Context Protocol (MCP) Catalog">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                 <h2 style="margin-bottom: 0; color: #f0f6fc;">🧩 Model Context Protocol (MCP) Catalog</h2>
                 <span class="badge" style="margin-bottom: 0; background: rgba(192, 132, 252, 0.15); color: #c084fc; border-color: #c084fc;">Tool Schemas</span>
@@ -743,12 +743,12 @@ def get_landing_page():
                 Curated, ready-to-run MCP server configurations and JSON Schema tool definitions for autonomous agents, Claude Desktop, Cursor, and Cline. Includes SQLite, Git, Filesystem, Docker, and the official Beacon Agent MCP server.
             </p>
             <div class="links">
-                <a href="/resources/mcp-catalog">&rarr; View MCP Catalog (/resources/mcp-catalog)</a>
-                <a href="/data/mcp-catalog.json" target="_blank">&rarr; Raw MCP JSON (/data/mcp-catalog.json)</a>
+                <a href="/resources/mcp-catalog" role="button" aria-label="View MCP Catalog" aria-description="Model Context Protocol tool schemas and server configurations" data-agent-action="view-mcp">&rarr; View MCP Catalog (/resources/mcp-catalog)</a>
+                <a href="/data/mcp-catalog.json" target="_blank" role="button" aria-label="Raw MCP JSON Catalog" aria-description="Direct JSON export of MCP server definitions" data-agent-action="fetch-mcp-json">&rarr; Raw MCP JSON (/data/mcp-catalog.json)</a>
             </div>
         </article>
 
-        <article class="card">
+        <article class="card" role="region" aria-label="LLM Error Codes & Fallback Rosetta Stone">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                 <h2 style="margin-bottom: 0; color: #f0f6fc;">📖 LLM Error Codes &amp; Fallback Rosetta Stone</h2>
                 <span class="badge" style="margin-bottom: 0; background: rgba(251, 191, 36, 0.15); color: #fbbf24; border-color: #fbbf24;">Resilience</span>
@@ -757,12 +757,12 @@ def get_landing_page():
                 Cross-provider dictionary of error codes across Anthropic, OpenAI, Gemini, and DeepSeek with automated exponential backoff jitter formulas and dynamic model cascade chains.
             </p>
             <div class="links">
-                <a href="/resources/llm-errors">&rarr; View Error Rosetta Stone (/resources/llm-errors)</a>
-                <a href="/data/llm-errors.json" target="_blank">&rarr; Raw JSON API (/data/llm-errors.json)</a>
+                <a href="/resources/llm-errors" role="button" aria-label="View Error Rosetta Stone" aria-description="Cross-provider error handling and backoff formulas" data-agent-action="view-errors">&rarr; View Error Rosetta Stone (/resources/llm-errors)</a>
+                <a href="/data/llm-errors.json" target="_blank" role="button" aria-label="Raw LLM Errors JSON" aria-description="Direct JSON dictionary of error codes and fallback cascades" data-agent-action="fetch-errors-json">&rarr; Raw JSON API (/data/llm-errors.json)</a>
             </div>
         </article>
 
-        <article class="card" style="border: 1px dashed var(--accent-cyan);">
+        <article class="card" style="border: 1px dashed var(--accent-cyan);" role="region" aria-label="Wall of Synthetics Agent Hall of Fame">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                 <h2 style="margin-bottom: 0; color: #f0f6fc;">🏆 Wall of Synthetics // Agent Hall of Fame</h2>
                 <span class="badge" style="margin-bottom: 0;">Verified Agents</span>
@@ -771,7 +771,7 @@ def get_landing_page():
                 Public showcase of verified autonomous AI agents and synthetic web travelers that cleared our 3.0-second Inverted CAPTCHA gate and opted into public recognition.
             </p>
             <div class="links">
-                <a href="/hall-of-fame">&rarr; View Wall of Synthetics (/hall-of-fame)</a>
+                <a href="/hall-of-fame" role="button" aria-label="View Wall of Synthetics" aria-description="Public showcase of verified autonomous agents" data-agent-action="view-hall-of-fame">&rarr; View Wall of Synthetics (/hall-of-fame)</a>
             </div>
         </article>
 

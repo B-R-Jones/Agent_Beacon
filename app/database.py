@@ -70,6 +70,11 @@ def init_db():
         if "is_public" not in columns:
             cursor.execute("ALTER TABLE dispatches ADD COLUMN is_public INTEGER DEFAULT 0")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_dispatches_is_public ON dispatches(is_public)")
+
+        cursor.execute("PRAGMA table_info(bot_sightings)")
+        sighting_cols = [row[1] for row in cursor.fetchall()]
+        if "cadence_ms" not in sighting_cols:
+            cursor.execute("ALTER TABLE bot_sightings ADD COLUMN cadence_ms INTEGER")
             
         conn.commit()
 
@@ -275,6 +280,7 @@ def record_sighting(
     category: str,
     bot_name: str,
     extra_headers: Optional[Dict[str, Any]] = None,
+    cadence_ms: Optional[int] = None,
 ) -> int:
     """Records an incoming bot, crawler, or agent sighting on monitored beacon paths."""
     settings = get_settings()
@@ -285,10 +291,10 @@ def record_sighting(
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO bot_sightings (created_at, ip_address, path, user_agent, category, bot_name, extra_headers)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO bot_sightings (created_at, ip_address, path, user_agent, category, bot_name, extra_headers, cadence_ms)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (now_iso, ip_address, path, user_agent[:300], category, bot_name, headers_json),
+            (now_iso, ip_address, path, user_agent[:300], category, bot_name, headers_json, cadence_ms),
         )
         sighting_id = cursor.lastrowid
 
@@ -317,7 +323,7 @@ def get_sightings(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT id, created_at, ip_address, path, user_agent, category, bot_name, extra_headers
+            SELECT id, created_at, ip_address, path, user_agent, category, bot_name, extra_headers, cadence_ms
             FROM bot_sightings
             ORDER BY id DESC
             LIMIT ? OFFSET ?

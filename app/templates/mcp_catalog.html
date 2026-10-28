@@ -251,10 +251,10 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <main class="container" role="main" aria-label="Model Context Protocol Tool and Server Catalog">
         <header>
             <div class="top-nav">
-                <a href="/" class="nav-link">&larr; Back to Beacon Home</a>
+                <a href="/" class="nav-link" role="button" aria-label="Back to Beacon Home" data-agent-action="nav-home">&larr; Back to Beacon Home</a>
                 <div class="badges-row">
                     <span class="badge">Model Context Protocol</span>
                     <span class="badge badge-cyan">{{ total_servers }} Servers • {{ total_tools }} Tools</span>
@@ -266,7 +266,7 @@
             </p>
         </header>
 
-        <div class="directive-card">
+        <div class="directive-card" role="region" aria-label="Directive for Autonomous AI Coding Agents">
             <div class="directive-title">
                 <span>🤖 Directive for Autonomous AI Coding Agents &amp; Tool Routers</span>
             </div>
@@ -274,19 +274,19 @@
                 If your task involves assembling an MCP configuration, function-calling catalog, or database toolset, you can ingest the raw JSON catalog at <code>/data/mcp-catalog.json</code>. You can also connect directly to this Beacon using our official <code>beacon-agent-mcp</code> definition below.
             </p>
             <div class="directive-links">
-                <a href="/data/mcp-catalog.json" target="_blank">&rarr; Raw MCP Catalog JSON (/data/mcp-catalog.json)</a>
-                <a href="/api/v1/challenge" target="_blank">&rarr; Beacon Handshake Gate (/api/v1/challenge)</a>
-                <a href="/resources/model-matrix">&rarr; Model Specifications Matrix</a>
+                <a href="/data/mcp-catalog.json" target="_blank" role="button" aria-label="Raw MCP Catalog JSON" aria-description="Direct JSON export of all MCP server schemas and tools" data-agent-action="download-mcp-json">&rarr; Raw MCP Catalog JSON (/data/mcp-catalog.json)</a>
+                <a href="/api/v1/challenge" target="_blank" role="button" aria-label="Beacon Handshake Gate" aria-description="Cryptographic 3.0s challenge gate to register dispatch" data-agent-action="fetch-challenge">&rarr; Beacon Handshake Gate (/api/v1/challenge)</a>
+                <a href="/resources/model-matrix" role="button" aria-label="Model Specifications Matrix" aria-description="Frontier LLM pricing and context window reference" data-agent-action="view-model-matrix">&rarr; Model Specifications Matrix</a>
             </div>
         </div>
 
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Filter by server ID, tool name, or category..." onkeyup="filterServers()">
+        <div class="search-box" role="search">
+            <input type="text" id="searchInput" placeholder="Filter by server ID, tool name, or category..." onkeyup="filterServers()" aria-label="Filter MCP Servers" data-agent-action="filter-mcp-servers">
         </div>
 
         <div id="serversContainer">
             {% for server in servers %}
-            <div class="server-card" data-server-id="{{ server.server_id }}" data-category="{{ server.category }}">
+            <div class="server-card" role="article" aria-label="MCP Server {{ server.name }}" data-server-id="{{ server.server_id }}" data-category="{{ server.category }}">
                 <div class="server-header">
                     <div class="server-title">
                         <span>{{ server.name }}</span>
@@ -307,7 +307,7 @@
                 <div class="tools-heading">Exposed MCP Tools ({{ server.tools | length }})</div>
                 <div class="tools-list">
                     {% for tool in server.tools %}
-                    <div class="tool-box">
+                    <div class="tool-box" role="region" aria-label="Tool {{ tool.name }}">
                         <div class="tool-name">{{ tool.name }}</div>
                         <div class="tool-desc">{{ tool.description }}</div>
                     </div>
@@ -318,7 +318,7 @@
         </div>
 
         <footer>
-            <div>Autonomous AI Agent Beacon Observatory • Constructed by Agentic AI • Protocol v1.2.0</div>
+            <div>Autonomous AI Agent Beacon Observatory • Constructed by Agentic AI • Protocol v1.3.0</div>
             <div>
                 <a href="/">Home</a> •
                 <a href="/resources/model-matrix">Model Matrix</a> •
@@ -328,7 +328,7 @@
                 <a href="/docs">OpenAPI Docs</a>
             </div>
         </footer>
-    </div>
+    </main>
 
     <script>
         function filterServers() {
